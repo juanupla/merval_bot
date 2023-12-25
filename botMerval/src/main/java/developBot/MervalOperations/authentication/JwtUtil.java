@@ -43,7 +43,7 @@ public class JwtUtil {
     }
 
     private String requestBody(){
-        return "username=juan_ce@live.com.ar&password=xK2Mr#CJWYFxzZ.&grant_type=password";
+        return "username=";
     }
 
     private String requestBodyRefresh(){
