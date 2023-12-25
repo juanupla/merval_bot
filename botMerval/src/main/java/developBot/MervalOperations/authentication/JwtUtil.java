@@ -18,7 +18,7 @@ public class JwtUtil {
         getToken();
     }
 
-    public CompletableFuture<String> getToken() {
+    public String getToken() {
     // configurar los datos
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -29,7 +29,7 @@ public class JwtUtil {
     RestTemplate restTemplate = new RestTemplate();
     ResponseEntity<String> response = restTemplate.postForEntity("https://api.invertironline.com/token", request, String.class);
     String resp = extractToken(response.getBody());
-    return CompletableFuture.supplyAsync(()-> resp);
+    return  resp;
 }
 
     private String extractToken(String responseBody) {
@@ -43,14 +43,14 @@ public class JwtUtil {
     }
 
     private String requestBody(){
-        return "username=&password=&grant_type=password";
+        return "username=juan_ce@live.com.ar&password=xK2Mr#CJWYFxzZ.&grant_type=password";
     }
 
     private String requestBodyRefresh(){
         return "refresh_token="+refreshToken+"&grant_type=refresh_token";
     }
 
-    public CompletableFuture<String> refToken() {
+    public String refToken() {
         // configurar los datos
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -61,7 +61,7 @@ public class JwtUtil {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> response = restTemplate.postForEntity("https://api.invertironline.com/token", request, String.class);
         String resp = extractToken(response.getBody());
-        return CompletableFuture.supplyAsync(()-> resp);
+        return resp;
     }
 
 }
