@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,9 +40,15 @@ public class BotMerval {
         List<Operacion> deletePendingOperations = botMervalService.removePendingOrders(prueba.getToken());
         System.out.println("la Lista de operaciones pendientes es de: " + deletePendingOperations.size() + " operaciones");
 
-        boolean cot = botMervalService.calculoEMAs(prueba.getToken(),"meli");
-        if(cot){
-            System.out.println("ema positiva : Compra");
+//        boolean cot = botMervalService.calculoEMAs(prueba.getToken(),"meli");
+//        if(cot){
+//            System.out.println("ema positiva : Compra");
+//        }
+
+        List<BigDecimal> list = botMervalService.calculoEMAs(prueba.getToken(),"cvx");
+        System.out.println("EMAs: ");
+        for (BigDecimal big: list) {
+            System.out.println(big);
         }
     }
 }

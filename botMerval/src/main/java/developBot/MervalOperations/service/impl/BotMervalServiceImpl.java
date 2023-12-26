@@ -5,7 +5,6 @@ import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Porta
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
-import developBot.MervalOperations.models.models.PrecioDTO;
 import developBot.MervalOperations.service.BotMervalService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.*;
@@ -16,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -25,9 +25,13 @@ public class BotMervalServiceImpl implements BotMervalService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ModelMapper modelMapper = new ModelMapper();
 
-    //001 Este método elimina aquellos activos que se encuentran en cartera ya que
+    //001 Este método elimina aquellos activos presente en la cartera de la lista inicial a recorrer ya que
     //por cada activo se abriran posiciones del 5% del capital, sin ajuste.
-    //así solo se podran aquellos activos que no se encuentren en cartera.
+    //así solo se podran procesar aquellos activos que no se encuentren en cartera.
+
+    //este metodo tambien podra realizar una comprovacion del estado de los activos ya en carter, es decir:
+    //si el activo en cartera da positico en EMAsPurchaseOperation no hace nada, si da positivo en
+    //EMAsSaleOperation ejecutara entonces saleOperation para vender el activo en cuestion.
     @Override
     public List<String> removeOperationalTickets(String token, String pais ,List<String> ticketsList) {
 
@@ -42,6 +46,8 @@ public class BotMervalServiceImpl implements BotMervalService {
                 HttpMethod.GET,entity, Portafolio.class,urlParams);
 
         Portafolio portafolio = modelMapper.map(portafolioResponseEntity.getBody(), Portafolio.class);
+
+
 
         if(portafolio.getActivos().size() > 0){
             for (Posicion activo: portafolio.getActivos()) {
@@ -105,50 +111,53 @@ public class BotMervalServiceImpl implements BotMervalService {
         }
     }
 
-    //003 este método será interno y se encargara de calcular las EMAs solicitadas y se devuelven en el objeto
-    // EmasDTO que contiene 4 BidDecimal que corresponde a cada EMA
-
-    //aca vamos a devolver una EmaDTO, esto ahora esta solo para probar
-    public boolean calculoEMAs(String token, String simbolo) {
-        //necesito traer 100 cotizaciones
-        /*
-        List<Cotizacion> cotizaciones = getCotizaciones(token,simbolo);
-        List<PrecioDTO> cotiz = getPriceByIntervals(cotizaciones);
-        BigDecimal ema3 = getEma(3,cotiz);
-        BigDecimal ema9 = getEma(9,cotiz);
-        BigDecimal ema21 = getEma(21,cotiz);
-        BigDecimal ema50 = getEma(50,cotiz);
-
-        boolean flag = true;
-        if(ema21.compareTo(ema50)<0){
-            flag = false;
-        } else if (ema9.compareTo(ema21)<0) {
-            flag = false;
-        } else if (ema3.compareTo(ema9)<0) {
-            flag = false;
-        }
-
-        System.out.println("Ema3: " + ema3.toString() + "\n"+
-                "Ema9: " + ema9.toString() + "\n"+
-                "Ema21: " + ema21 + "\n"+
-                "Ema50: " + ema50.toString() + "\n");
-        return flag;
-
-         */
+    //Metodo para verificar si las disposicion de emas dan compra
+    @Override
+    public boolean EMAsPurchaseOperation(List<BigDecimal> emas){
         return false;
     }
+    //Metodo para verificar si las disposicion de emas dan venta
+    @Override
+    public boolean EMAsSaleOperation(List<BigDecimal> emas){
+        return false;
+    }
+    //Metodo para ejecutar la venta de un activo
+    @Override
+    public boolean saleOperation(String token, String tiket){
+        return false;
+    }
+    //Metodo para ejecutar la compra de un activo
+    @Override
+    public boolean purchaseOperation(String token, String tiket){
+        return false;
+    }
+
 
     //SUB-001 Este metodo se utiliza en el metodo 003 para devolverle el listado de cotizaciones segun el simbolo recibido
     //La lista devuelve el historial de mayor a menor
     public List<Cotizacion> getCotizaciones(String token, String simbolo){
-        LocalDateTime fechaHasta = LocalDateTime.now();
-        LocalDateTime fechaDesde = fechaHasta.minusDays(1);
+
+
+        LocalDateTime horaHasta = LocalDateTime.now().withHour(17).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime horaDesde = LocalDateTime.now().minusDays(200).withHour(0).withMinute(0).withSecond(0);
+
+//        while (!esHorarioLaboral(horaDesde, horaHasta)) {
+//            // Si la hora actual está fuera del horario laboral, ajustar las fechas al día siguiente
+//            horaDesde = horaDesde.plusDays(1).withHour(11);
+//            horaHasta = horaHasta.plusDays(1).withHour(17);
+//        }
+        DayOfWeek diaSem = horaHasta.getDayOfWeek();
+        if(diaSem == DayOfWeek.MONDAY) {
+            horaDesde = horaDesde.minusDays(2);
+        }
+
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String fechaDesdeStr = fechaDesde.format(formatter);
-        String fechaHastaStr = fechaHasta.format(formatter);
+        String fechaDesdeStr = horaDesde.format(formatter);
+        DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String fechaHastaStr = horaHasta.format(formatter2);
 
-        String path = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+simbolo+"/Cotizacion/seriehistorica/"+fechaDesdeStr+"/"+fechaHastaStr+"/sinAjustar";
+        String path = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+simbolo.toString()+"/Cotizacion/seriehistorica/"+fechaDesdeStr+"/"+fechaHastaStr+"/sinAjustar";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
@@ -171,88 +180,67 @@ public class BotMervalServiceImpl implements BotMervalService {
         return Arrays.asList(cotizaciones);
     }
 
+    //003 este método será interno y se encargara de calcular las EMAs solicitadas y se devuelven en el objeto
+    // EmasDTO que contiene 4 BidDecimal que corresponde a cada EMA
+    //aca vamos a devolver una EmaDTO, esto ahora esta solo para probar
+    public List<BigDecimal> calculoEMAs(String token, String simbolo) {
 
-    public List<BigDecimal> getEMAs(List<PrecioDTO> cotizaciones){
-        boolean flag = false;
+        List<Cotizacion> cotizaciones = getCotizaciones(token, simbolo);
 
+        List<BigDecimal> emas = getEMAs(cotizaciones);
+
+        return emas;
+    }
+
+    //Este metodo se usara en el 003 para obtener un listados de las EMAs
+    public List<BigDecimal> getEMAs(List<Cotizacion> cotizaciones){
+
+        BigDecimal betaEMA3 = getBeta(3);
         BigDecimal betaEMA9 = getBeta(9);
         BigDecimal betaEMA21 = getBeta(21);
         BigDecimal betaEMA50 = getBeta(50);
 
-        BigDecimal ema_1ByEMA9 = getEma_1(9,cotizaciones);
+        BigDecimal ema_1EMA3 = getEma_1(3,cotizaciones);
+        BigDecimal ema_1EMA9 = getEma_1(9,cotizaciones);
         BigDecimal ema_1EMA21 = getEma_1(21,cotizaciones);
         BigDecimal ema_1EMA50 = getEma_1(50,cotizaciones);
 
+        BigDecimal getEma3 = getEma(3,betaEMA3,ema_1EMA3,cotizaciones);
+        BigDecimal getEma9 = getEma(9,betaEMA9,ema_1EMA9,cotizaciones);
+        BigDecimal getEma21 = getEma(21,betaEMA21,ema_1EMA21,cotizaciones);
+        BigDecimal getEma50 = getEma(50,betaEMA50,ema_1EMA50,cotizaciones);
 
+        List<BigDecimal> emas = new ArrayList<>();
+        emas.add(getEma3);
+        emas.add(getEma9);
+        emas.add(getEma21);
+        emas.add(getEma50);
 
-        return null;
+        return emas;
     }
 
-    //Este metodo deuvelve los ultimos 100 intervalos de 15 min, considerando al acual
-    public List<PrecioDTO> getPriceByIntervals(List<Cotizacion> cotizaciones) {
+    public BigDecimal getEma(Integer emaNro, BigDecimal beta, BigDecimal ema_1,List<Cotizacion> cotizaciones){
+        BigDecimal ultimaEma = new BigDecimal("0");
+        for (int i = emaNro-1; i>=0;i--){
 
+            Double ultim = cotizaciones.get(i).getUltimoPrecio();
+            BigDecimal ultimMultip = beta.multiply(BigDecimal.valueOf(ultim));
 
-        LocalDateTime ahora = LocalDateTime.now();
-        LocalDateTime inicioHorario = ahora.withHour(11).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime finHorario = ahora.withHour(17).withMinute(0).withSecond(0).withNano(0);
-
-
-        LocalDateTime tiempoActual = LocalDateTime.now();
-        LocalDateTime tiempoMenos1485Minutos = tiempoActual.minusMinutes(1485); // 1485 minutos, es decir, 99 intervalos de 15 minutos
-
-        int contador = 99;
-
-        List<PrecioDTO> precioDTOList = new ArrayList<>();
-
-        while (contador >= 0) {
-            LocalDateTime inicioIntervalo = tiempoMenos1485Minutos;
-            LocalDateTime finIntervalo = tiempoMenos1485Minutos.plusMinutes(15);
-
-
-            if (inicioIntervalo.isBefore(inicioHorario)) {
-                inicioIntervalo = inicioHorario;
+            BigDecimal betaResta = BigDecimal.valueOf(1).subtract(beta);
+            BigDecimal multipl;
+            if(i==emaNro-1){
+                multipl = betaResta.multiply(ema_1);
             }
-            if (finIntervalo.isAfter(finHorario)) {
-                finIntervalo = finHorario;
+            else {
+                multipl = betaResta.multiply(ultimaEma);
             }
-
-            List<Cotizacion> cotizacionIntervalo = new ArrayList<>();
-
-            for (Cotizacion cotizacion : cotizaciones) {
-                LocalDateTime fechaCotizacion = LocalDateTime.parse(cotizacion.getFechaHora());
-                if (fechaCotizacion.isAfter(inicioIntervalo) && fechaCotizacion.isBefore(finIntervalo)
-                        && fechaCotizacion.isAfter(inicioHorario) && fechaCotizacion.isBefore(finHorario)) {
-                    cotizacionIntervalo.add(cotizacion);
-                }
-            }
-
-            double ultimoPrecio = 0;
-            LocalDateTime horaUltimoPrecio = null;
-            for (Cotizacion cotizacion : cotizacionIntervalo) {
-                LocalDateTime fechaCotizacion = LocalDateTime.parse(cotizacion.getFechaHora());
-                if (fechaCotizacion.isAfter(inicioIntervalo) && fechaCotizacion.isBefore(finIntervalo)) {
-                    if (horaUltimoPrecio == null || fechaCotizacion.isAfter(horaUltimoPrecio)) {
-                        horaUltimoPrecio = fechaCotizacion;
-                        ultimoPrecio = cotizacion.getUltimoPrecio();
-                    }
-                }
-            }
-
-            PrecioDTO priceByIntervals = new PrecioDTO(ultimoPrecio, horaUltimoPrecio, contador);
-            precioDTOList.add(priceByIntervals);
-
-            contador--;
-            tiempoMenos1485Minutos = tiempoMenos1485Minutos.plusMinutes(15);
-            precioDTOList.sort(Comparator.comparingInt(PrecioDTO::getIntervaloNro));
+            ultimaEma = ultimMultip.add(multipl);
         }
-        return precioDTOList;
+        return ultimaEma;
     }
-    //este metodo respalda al getEma() en una fracion del calculo matematio a realizar: Ema-t1
 
-    //SUB-002 este metodo se utiliza para obtener la EMAt-1
-    public BigDecimal getEma_1(Integer emaNro, List<PrecioDTO> cotizaciones) {
+    public BigDecimal getEma_1(Integer emaNro, List<Cotizacion> cotizaciones) {
         if(emaNro == 3){
-
             BigDecimal acumulador = new BigDecimal("0");
             for(int i = 3; i<6; i++){
                 Double ultimpPrecio = cotizaciones.get(i).getUltimoPrecio();
@@ -261,7 +249,6 @@ public class BotMervalServiceImpl implements BotMervalService {
             }
             return acumulador.divide(new BigDecimal("3"),20, RoundingMode.HALF_UP);
         } else if (emaNro == 9) {
-
 
             BigDecimal acumulador = new BigDecimal("0");
             for(int i = 9; i<18; i++){
@@ -300,7 +287,8 @@ public class BotMervalServiceImpl implements BotMervalService {
         BigDecimal numerador = new BigDecimal("2");
         BigDecimal n = BigDecimal.valueOf(emaNro);
         BigDecimal n1= n.add(new BigDecimal("1"));
-        return numerador.divide(n1);
+        return numerador.divide(n1, 20, RoundingMode.HALF_UP); // Ajusta la escala y el modo de redondeo según necesites
+
     }
 
 }
