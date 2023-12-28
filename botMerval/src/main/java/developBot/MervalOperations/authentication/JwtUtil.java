@@ -13,6 +13,7 @@ public class JwtUtil {
     private String accesToken;
     private String refreshToken;
     private Long expires_in;
+    private String expires;
 
     public JwtUtil() {
         getToken();
@@ -39,11 +40,12 @@ public class JwtUtil {
         expires_in = jsonObject.get("expires_in").getAsLong();
         refreshToken = jsonObject.get("refresh_token").getAsString();
         accesToken = jsonObject.get("access_token").getAsString();
+        expires = jsonObject.get(".expires").getAsString();
         return accesToken;
     }
 
     private String requestBody(){
-        return "username=juan_ce@live.com.ar&password=xK2Mr#CJWYFxzZ.&grant_type=password";
+        return "username=";
     }
 
     private String requestBodyRefresh(){

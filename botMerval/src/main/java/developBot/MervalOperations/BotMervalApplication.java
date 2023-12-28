@@ -4,10 +4,9 @@ import developBot.MervalOperations.bot.BotMerval;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.feign.EnableFeignClients;
 
-@EnableFeignClients
 @SpringBootApplication
 public class BotMervalApplication {
-	public static void main(String[] args){
+	public static void main(String[] args) throws InterruptedException {
 
 		BotMerval bot = new BotMerval();
 		bot.ejecution();

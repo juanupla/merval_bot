@@ -1,6 +1,7 @@
 package developBot.MervalOperations.models.clientModels.titulos.cotizacion;
 
-import developBot.MervalOperations.models.clientModels.titulos.PuntasModel;
+
+import developBot.MervalOperations.models.clientModels.titulos.Punta;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,7 +26,7 @@ public class Cotizacion {
     private String moneda;
     private Double precioAjuste;
     private Double interesesAbiertos;
-    private List<PuntasModel> puntas;
+    private List<Punta> puntas;
     private Integer cantidadOperaciones;
     private String descripcionTitulo;
     private String plazo;

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PuntasModel {
+public class Punta {
     private Double cantidadCompra;
     private Double precioCompra;
     private Double precioVenta;

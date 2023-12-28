@@ -1,6 +1,7 @@
 package developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle;
 
-import developBot.MervalOperations.models.clientModels.titulos.PuntasModel;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import developBot.MervalOperations.models.clientModels.titulos.Punta;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CotizacionDetalleMobile {
+public class    CotizacionDetalleMobile {
     private boolean operableCompra;
     private boolean operableVenta;
     private boolean visible;
@@ -20,25 +21,26 @@ public class CotizacionDetalleMobile {
     private Double apertura;
     private Double maximo;
     private Double minimo;
+    @JsonProperty("yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaHora;
     private String tendencia;
     private Double cierreAnterior;
     private Double montoOperado;
-    private Long volumenNominal;
+    private Integer volumenNominal;
     private Double precioPromedio;
     private String moneda;
     private Double precioAjuste;
-    private Long interesesAbiertos;
-    private List<PuntasModel> puntas;
-    private Long cantidadOperaciones;
+    private Double interesesAbiertos;
+    private List<Punta> puntas;
+    private Integer cantidadOperaciones;
     private String simbolo;
     private String pais;
     private String mercado;
     private String tipo;
     private String descripcionTitulo;
     private String plazo;
-    private int laminaMinima;
-    private int lote;
-    private int cantidadMinima;
+    private Integer laminaMinima;
+    private Integer lote;
+    private Integer cantidadMinima;
     private Double puntosVariacion;
 }
