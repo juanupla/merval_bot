@@ -6,7 +6,6 @@ import lombok.Data;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.concurrent.CompletableFuture;
 @Data
 public class JwtUtil {
 

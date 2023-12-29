@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class Vender {
     private String mercado;
     private String simbolo;
-    private Long cantidad;
+    private Integer cantidad;
     private Double precio;
     private LocalDateTime validez;
     private String tipoOrden;///precioLimite

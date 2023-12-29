@@ -5,12 +5,14 @@ import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Oper
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Portafolio;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
 import developBot.MervalOperations.models.clientModels.operar.Comprar;
+import developBot.MervalOperations.models.clientModels.operar.Vender;
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
 import developBot.MervalOperations.service.BotMervalService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.*;
+import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpServerErrorException;
@@ -24,19 +26,19 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
+@Service
 public class BotMervalServiceImpl implements BotMervalService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ModelMapper modelMapper = new ModelMapper();
+    private final RestTemplate restTemplate;
+    private final ModelMapper modelMapper;
+    public BotMervalServiceImpl(RestTemplate restTemplate, ModelMapper modelMapper) {
+        this.restTemplate = restTemplate;
+        this.modelMapper = modelMapper;
+    }
 
     //001 Este método elimina aquellos activos presente en la cartera de la lista inicial a recorrer ya que
     //por cada activo se abriran posiciones del 5% del capital, sin ajuste.
     //así solo se podran procesar aquellos activos que no se encuentren en cartera.
-
-    //este metodo tambien podra realizar una comprovacion del estado de los activos ya en carter, es decir:
-    //si el activo en cartera da positivo en EMAsPurchaseOperation no hace nada, si da positivo en
-    //EMAsSaleOperation ejecutara entonces saleOperation para vender el activo en cuestion.
     @Override
     public List<String> removeOperationalTickets(String token, String pais ,List<String> ticketsList) throws InterruptedException {
 
@@ -53,7 +55,7 @@ public class BotMervalServiceImpl implements BotMervalService {
                 ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/portafolio/{pais}",
                         HttpMethod.GET,entity, Portafolio.class,urlParams);
 
-                Portafolio portafolio = modelMapper.map(portafolioResponseEntity.getBody(), Portafolio.class);
+                Portafolio portafolio = portafolioResponseEntity.getBody();
 
                 if(portafolio == null){
                     break;
@@ -79,6 +81,33 @@ public class BotMervalServiceImpl implements BotMervalService {
         }
         return null;
 
+    }
+
+    //Este metodo obtiene aquellos posiciones que ESTAN en cartera, se arma y envia una lista de los mismos.
+    @Override
+    public List<Posicion> operationalTickets(String token,String pais) {
+        int intentos = 3;
+        while (intentos > 0) {
+            try {
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Authorization", "Bearer " + token);
+                HttpEntity<String> entity = new HttpEntity<>(headers);
+
+                Map<String, String> urlParams = new HashMap<>();
+                urlParams.put("pais", pais);
+
+                ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/portafolio/{pais}",
+                        HttpMethod.GET, entity, Portafolio.class, urlParams);
+
+                Portafolio portafolio = modelMapper.map(portafolioResponseEntity.getBody(), Portafolio.class);
+                if (portafolio != null){
+                    return new ArrayList<>(portafolio.getActivos());
+                }
+            }catch (Exception e){
+                intentos--;
+            }
+        }
+        return null;
     }
 
     //002 Este método eliminará aquellas ordenes que queden en estado pendiente,
@@ -140,63 +169,66 @@ public class BotMervalServiceImpl implements BotMervalService {
         return Collections.emptyList();
     }
 
-    //Metodo para verificar si las disposicion de emas dan compra
-    @Override
-    public boolean EMAsPurchaseOperation(String token, String ticket, List<BigDecimal> emas) throws InterruptedException {
-        int intentos = 3;
-        while (intentos > 0) {
-            try {
-                BigDecimal ema3 = emas.get(0);
-                BigDecimal ema9 = emas.get(1);
-                BigDecimal ema21 = emas.get(2);
-                BigDecimal ema50 = emas.get(3);
-
-                String path = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+ticket.toUpperCase()+"/CotizacionDetalleMobile/t2";
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Authorization", "Bearer " + token);
-
-                HttpEntity<?> entity = new HttpEntity<>(headers);
-
-                ResponseEntity<CotizacionDetalleMobile> response = restTemplate.exchange(
-                        path,
-                        HttpMethod.GET,
-                        entity,
-                        CotizacionDetalleMobile.class
-                );
-                CotizacionDetalleMobile cotizacion = modelMapper.map(response.getBody(),CotizacionDetalleMobile.class);
-
-                if (cotizacion == null){
-                    return false;
-                }
-
-                BigDecimal bigDecimalValue = BigDecimal.valueOf(cotizacion.getUltimoPrecio());
-                if(bigDecimalValue.compareTo(ema3)>0 && ema3.compareTo(ema9)>0 && ema9.compareTo(ema21)>0 && ema21.compareTo(ema50)>0){
-                    return true;
-                }
-                return false;
-            } catch (HttpServerErrorException e) {
-                intentos--;
-                Thread.sleep(5000); // Esperar 5 segundos antes de reintentar
-            }
-        }
-        return false;
-    }
-    //Metodo para verificar si las disposicion de emas dan venta
-    @Override
-    public boolean EMAsSaleOperation(List<BigDecimal> emas) throws InterruptedException {
-        BigDecimal ema3 = emas.get(0);
-        BigDecimal ema9 = emas.get(1);
-
-        if(ema3.compareTo(ema9)<0){
-            return true;
-        }
-        return false;
-    }
 
     //Metodo para ejecutar la venta de un activo
     @Override
-    public boolean saleOperation(String token, String tiket){
+    public boolean saleOperation(String token, List<BigDecimal> emas,Posicion activo){
+        if (EMAsSaleOperation(emas)){
+            int intentos = 3;
+            while (intentos>0){
+                try {
+                    //voy a necesitar consultar este para saber
+                    // cuales son las puntas para realizar la venta
+                    String path1 = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+activo.getTitulo().getSimbolo().toUpperCase()+"/CotizacionDetalleMobile/t2";
+
+                    HttpHeaders headers1 = new HttpHeaders();
+                    headers1.set("Authorization", "Bearer " + token);
+
+                    HttpEntity<?> entity1 = new HttpEntity<>(headers1);
+
+                    ResponseEntity<CotizacionDetalleMobile> response = restTemplate.exchange(
+                            path1,
+                            HttpMethod.GET,
+                            entity1,
+                            CotizacionDetalleMobile.class
+                    );
+                    CotizacionDetalleMobile cotizacion = response.getBody(); //traigo la ultima cotizacion del instrumento
+
+                    if(cotizacion == null){
+                        break;
+                    }
+
+                    //-------------Venta---------------
+                    String path = "https://api.invertironline.com/api/v2/operar/Vender";
+
+                    Integer cantidad = activo.getCantidad();
+                    Double precio = cotizacion.getPuntas().get(0).getPrecioCompra(); //precio obtenido en operaciones anteriores(segun precio obtenido de las puntas - CotizacionDetalleMobile- )
+                    LocalDateTime validez = LocalDateTime.now().withHour(17);
+                    String tipoOrden = "precioLimite";
+                    String plazo = "t2";
+                    Vender venta = new Vender("bCBA",activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precio,validez,tipoOrden,plazo,null);
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.set("Authorization", "Bearer " + token);
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+
+                    HttpEntity<Vender> entity = new HttpEntity<>(venta,headers);
+
+                    ResponseEntity<Response> resp = restTemplate.exchange(path,HttpMethod.POST,entity,Response.class);
+
+                    Response respon = resp.getBody();
+
+                    if (respon != null && respon.isOk()){
+                        return true;
+                    }
+                    return false;
+                }
+                catch (Exception e){
+                    intentos --;
+                }
+            }
+        }
+
         return false;
     }
 
@@ -229,8 +261,11 @@ public class BotMervalServiceImpl implements BotMervalService {
 
                     EstadoCuenta estadoCuenta = modelMapper.map(portafolioResponseEntity.getBody(), EstadoCuenta.class); //traigo el estado de cuenta
 
-                    double valor5PorcientoCartera = estadoCuenta.getCuentas().get(0).getDisponible()*0.05;
+                    double valor5PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal()*0.05;
                     if(cotizacion == null || valor5PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){ //que al menos se púeda comprar 1
+                        return false;
+                    }
+                    if(valor5PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){ //los findos "disponibles" no poseen el 5% sobre el total de la cartera para operar este activo
                         return false;
                     }
                     double operacion = valor5PorcientoCartera/cotizacion.getPuntas().get(0).getPrecioVenta();
@@ -251,11 +286,13 @@ public class BotMervalServiceImpl implements BotMervalService {
 
 
                             String url1 = "https://api.invertironline.com/api/v2/operar/Comprar";
+
                             HttpHeaders headers1 = new HttpHeaders();
-                            headers.setContentType(MediaType.APPLICATION_JSON);
+                            headers1.set("Authorization", "Bearer " + token);
+                            headers1.setContentType(MediaType.APPLICATION_JSON);
 
 
-                            HttpEntity<Comprar> requestEntity1 = new HttpEntity<>(compra, headers);
+                            HttpEntity<Comprar> requestEntity1 = new HttpEntity<>(compra, headers1);
 
                             // Enviar la solicitud POST y obtener la respuesta
                             ResponseEntity<Response> responseEntity = restTemplate.exchange(
@@ -295,6 +332,62 @@ public class BotMervalServiceImpl implements BotMervalService {
 
         }
         System.out.println("el tiket "+ticket+" se ha procesado adecuadamente y no se realizo la compra por estrategia fuera de rango");
+        return false;
+    }
+
+
+    //Metodo para verificar si las disposicion de emas dan compra - Se utiliza en purchaseOperation()
+    @Override
+    public boolean EMAsPurchaseOperation(String token, String ticket, List<BigDecimal> emas) throws InterruptedException {
+        int intentos = 3;
+        while (intentos > 0) {
+            try {
+                BigDecimal ema3 = emas.get(0);
+                BigDecimal ema9 = emas.get(1);
+                BigDecimal ema21 = emas.get(2);
+                BigDecimal ema50 = emas.get(3);
+
+                String path = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+ticket.toUpperCase()+"/CotizacionDetalleMobile/t2";
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Authorization", "Bearer " + token);
+
+                HttpEntity<?> entity = new HttpEntity<>(headers);
+
+                ResponseEntity<CotizacionDetalleMobile> response = restTemplate.exchange(
+                        path,
+                        HttpMethod.GET,
+                        entity,
+                        CotizacionDetalleMobile.class
+                );
+                CotizacionDetalleMobile cotizacion = modelMapper.map(response.getBody(),CotizacionDetalleMobile.class);
+
+                if (cotizacion == null){
+                    return false;
+                }
+
+                BigDecimal bigDecimalValue = BigDecimal.valueOf(cotizacion.getUltimoPrecio());
+                if(bigDecimalValue.compareTo(ema3)>0 && ema3.compareTo(ema9)>0 && ema9.compareTo(ema21)>0 && ema21.compareTo(ema50)>0){
+                    return true;
+                }
+                return false;
+            } catch (HttpServerErrorException e) {
+                intentos--;
+                Thread.sleep(4000); // Esperar 4 segundos antes de reintentar
+            }
+        }
+        return false;
+    }
+
+    //Metodo para verificar si las disposicion de emas dan venta - Se utiliza en saleOperation()
+    @Override
+    public boolean EMAsSaleOperation(List<BigDecimal> emas){
+        BigDecimal ema3 = emas.get(0);
+        BigDecimal ema9 = emas.get(1);
+
+        if(ema3.compareTo(ema9)<0){
+            return true;
+        }
         return false;
     }
 
@@ -392,8 +485,6 @@ public class BotMervalServiceImpl implements BotMervalService {
             }
         }
         //hasta acá encuentro los dos dias anteriores de cotizacion, tienen muchas cotizaciones(intradiarias) y solo quiero las del cierre
-
-
 
         //ahora, elimino todas esas fechas, solo me voy a quedar con las que seleccione en el paso anterior
         LocalDateTime eliminarRango = fechaAntesDeAyer.withHour(1);
