@@ -2,11 +2,9 @@ package developBot.MervalOperations.service;
 
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
-import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.BitSet;
 import java.util.List;
 
 @Service

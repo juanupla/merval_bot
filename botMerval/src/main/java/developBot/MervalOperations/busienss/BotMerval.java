@@ -1,4 +1,4 @@
-package developBot.MervalOperations.bot;
+package developBot.MervalOperations.busienss;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import developBot.MervalOperations.authentication.JwtUtil;
@@ -40,7 +40,8 @@ public class BotMerval {
 
         JwtUtil prueba = new JwtUtil();
         String token = prueba.getToken();
-        botMervalService = new BotMervalServiceImpl(restTemplate,modelMapper);
+        CallsApiIOL callsApiIOL= new CallsApiIOL();
+        botMervalService = new BotMervalServiceImpl(callsApiIOL);
 
 
         do {

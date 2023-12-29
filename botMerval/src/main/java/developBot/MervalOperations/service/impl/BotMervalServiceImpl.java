@@ -1,5 +1,6 @@
 package developBot.MervalOperations.service.impl;
 
+import developBot.MervalOperations.busienss.CallsApiIOL;
 import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.EstadoCuenta;
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Portafolio;
@@ -29,33 +30,23 @@ import java.util.*;
 @Service
 public class BotMervalServiceImpl implements BotMervalService {
 
-    private final RestTemplate restTemplate;
-    private final ModelMapper modelMapper;
-    public BotMervalServiceImpl(RestTemplate restTemplate, ModelMapper modelMapper) {
-        this.restTemplate = restTemplate;
-        this.modelMapper = modelMapper;
+    private final CallsApiIOL callsApiIOL; // No inicializar aquí, sino a través del constructor
+
+    public BotMervalServiceImpl(CallsApiIOL callsApiIOL) {
+        this.callsApiIOL = callsApiIOL;
     }
+
 
     //001 Este método elimina aquellos activos presente en la cartera de la lista inicial a recorrer ya que
     //por cada activo se abriran posiciones del 5% del capital, sin ajuste.
     //así solo se podran procesar aquellos activos que no se encuentren en cartera.
     @Override
     public List<String> removeOperationalTickets(String token, String pais ,List<String> ticketsList) throws InterruptedException {
-
         int intentos = 3;
         while (intentos > 0) {
             try {
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Authorization", "Bearer " + token);
-                HttpEntity<String> entity = new HttpEntity<>(headers);
 
-                Map<String, String> urlParams = new HashMap<>();
-                urlParams.put("pais", pais);
-
-                ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/portafolio/{pais}",
-                        HttpMethod.GET,entity, Portafolio.class,urlParams);
-
-                Portafolio portafolio = portafolioResponseEntity.getBody();
+                Portafolio portafolio = callsApiIOL.getPortafolioByPais(token,pais);
 
                 if(portafolio == null){
                     break;
@@ -89,17 +80,9 @@ public class BotMervalServiceImpl implements BotMervalService {
         int intentos = 3;
         while (intentos > 0) {
             try {
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Authorization", "Bearer " + token);
-                HttpEntity<String> entity = new HttpEntity<>(headers);
 
-                Map<String, String> urlParams = new HashMap<>();
-                urlParams.put("pais", pais);
+                Portafolio portafolio = callsApiIOL.getPortafolioByPais(token,pais);
 
-                ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/portafolio/{pais}",
-                        HttpMethod.GET, entity, Portafolio.class, urlParams);
-
-                Portafolio portafolio = modelMapper.map(portafolioResponseEntity.getBody(), Portafolio.class);
                 if (portafolio != null){
                     return new ArrayList<>(portafolio.getActivos());
                 }
@@ -114,48 +97,26 @@ public class BotMervalServiceImpl implements BotMervalService {
     //se haya hecho una ejecucion parcial o no, se eliminaran con esta función.
     @Override
     public List<Operacion> removePendingOrders(String token) {
-        String url = "https://api.invertironline.com/api/v2/operaciones";
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("estado", "pendientes");
+        Operacion[] operaciones = callsApiIOL.getOperaciones(token);
 
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
-
-        ResponseEntity<Operacion[]> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                Operacion[].class
-        );
-
-        Operacion[] operaciones = response.getBody();
-        if (operaciones == null) {
-            return Collections.emptyList();
-        }
         if (operaciones.length > 0) {
             int intentos = 3;
             while (intentos > 0) {
                 try {
                     List<Operacion> operacionesList = Arrays.asList(operaciones);
-                    int flag1 = 0;
+
+                    List<Operacion> operacionesProcesadas = new ArrayList<>();
 
                     for (Operacion operacion : operacionesList) {
-                        String operacionUrl = "https://api.invertironline.com/api/v2/operaciones/" + operacion.getNumero();
-                        ResponseEntity<Response> operacionResponse = restTemplate.exchange(
-                                operacionUrl,
-                                HttpMethod.GET,
-                                entity,
-                                Response.class
-                        );
 
-                        if (Objects.requireNonNull(operacionResponse.getBody()).isOk()) {
-                            flag1++;
+                        Response resp = callsApiIOL.deletePendingOrders(token,operacion.getNumero());
+
+                        if (resp != null && resp.isOk()) {
+                            operacionesProcesadas.add(operacion);
                         }
                     }
-                    return operacionesList;
+                    return operacionesProcesadas;
 
                 } catch (Exception e) {
                     intentos--;
@@ -177,46 +138,21 @@ public class BotMervalServiceImpl implements BotMervalService {
             int intentos = 3;
             while (intentos>0){
                 try {
-                    //voy a necesitar consultar este para saber
+                    //voy a necesitar consultar el activo para saber
                     // cuales son las puntas para realizar la venta
-                    String path1 = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+activo.getTitulo().getSimbolo().toUpperCase()+"/CotizacionDetalleMobile/t2";
 
-                    HttpHeaders headers1 = new HttpHeaders();
-                    headers1.set("Authorization", "Bearer " + token);
-
-                    HttpEntity<?> entity1 = new HttpEntity<>(headers1);
-
-                    ResponseEntity<CotizacionDetalleMobile> response = restTemplate.exchange(
-                            path1,
-                            HttpMethod.GET,
-                            entity1,
-                            CotizacionDetalleMobile.class
-                    );
-                    CotizacionDetalleMobile cotizacion = response.getBody(); //traigo la ultima cotizacion del instrumento
+                    CotizacionDetalleMobile cotizacion = callsApiIOL.getDetailCotization(token,activo.getTitulo().getSimbolo().toUpperCase());
 
                     if(cotizacion == null){
                         break;
                     }
 
                     //-------------Venta---------------
-                    String path = "https://api.invertironline.com/api/v2/operar/Vender";
 
                     Integer cantidad = activo.getCantidad();
-                    Double precio = cotizacion.getPuntas().get(0).getPrecioCompra(); //precio obtenido en operaciones anteriores(segun precio obtenido de las puntas - CotizacionDetalleMobile- )
-                    LocalDateTime validez = LocalDateTime.now().withHour(17);
-                    String tipoOrden = "precioLimite";
-                    String plazo = "t2";
-                    Vender venta = new Vender("bCBA",activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precio,validez,tipoOrden,plazo,null);
+                    Double precioPuntaCompra = cotizacion.getPuntas().get(0).getPrecioCompra(); //precio obtenido en operaciones anteriores(segun precio obtenido de las puntas - CotizacionDetalleMobile- )
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.set("Authorization", "Bearer " + token);
-                    headers.setContentType(MediaType.APPLICATION_JSON);
-
-                    HttpEntity<Vender> entity = new HttpEntity<>(venta,headers);
-
-                    ResponseEntity<Response> resp = restTemplate.exchange(path,HttpMethod.POST,entity,Response.class);
-
-                    Response respon = resp.getBody();
+                    Response respon = callsApiIOL.postSellAsset(token,activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precioPuntaCompra);
 
                     if (respon != null && respon.isOk()){
                         return true;
@@ -240,68 +176,34 @@ public class BotMervalServiceImpl implements BotMervalService {
             int intentos = 3;
             while (intentos > 0) {
                 try {
-                    String path = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+ticket.toUpperCase()+"/CotizacionDetalleMobile/t2";
+                    //traigo la ultima cotizacion del instrumento
+                    CotizacionDetalleMobile cotizacion = callsApiIOL.getDetailCotization(token,ticket.toUpperCase());
 
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.set("Authorization", "Bearer " + token);
-
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
-
-                    ResponseEntity<CotizacionDetalleMobile> response = restTemplate.exchange(
-                            path,
-                            HttpMethod.GET,
-                            entity,
-                            CotizacionDetalleMobile.class
-                    );
-                    CotizacionDetalleMobile cotizacion = response.getBody(); //traigo la ultima cotizacion del instrumento
-
-
-                    ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/estadocuenta",
-                            HttpMethod.GET,entity, Portafolio.class);
-
-                    EstadoCuenta estadoCuenta = modelMapper.map(portafolioResponseEntity.getBody(), EstadoCuenta.class); //traigo el estado de cuenta
+                    //traigo el estado de cuenta
+                    EstadoCuenta estadoCuenta = callsApiIOL.getAccountStatus(token);
 
                     double valor5PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal()*0.05;
-                    if(cotizacion == null || valor5PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){ //que al menos se púeda comprar 1
+
+                    //que al menos se púeda comprar 1
+                    if(cotizacion == null || valor5PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){
                         return false;
                     }
-                    if(valor5PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){ //los findos "disponibles" no poseen el 5% sobre el total de la cartera para operar este activo
+
+                    //los findos "disponibles" no poseen el 5% sobre el total de la cartera para operar este activo
+                    if(valor5PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){
                         return false;
                     }
+
                     double operacion = valor5PorcientoCartera/cotizacion.getPuntas().get(0).getPrecioVenta();
+
+                    //si puedo comprar 2,653 siempre redondeo hacia abajo
                     int operacionFinal = (int) Math.floor(operacion);
 
                     if (operacionFinal>= 1){
-                        if(cotizacion.getPuntas().get(0).getCantidadVenta() >= operacionFinal){//que la cantidad en la punta de venta sea igual o mayor a mi intencion de compra
-                            Comprar compra = new Comprar();
-                            compra.setMercado("bCBA");
-                            compra.setSimbolo(ticket);
-                            compra.setCantidad(Long.parseLong(Integer.toString(operacionFinal)));
-                            compra.setPrecio(cotizacion.getPuntas().get(0).getPrecioVenta());
-                            compra.setPlazo("t2");
+                        //que la cantidad en la punta de venta sea igual o mayor a la cantidad de mi intencion de compra
+                        if(cotizacion.getPuntas().get(0).getCantidadVenta() >= operacionFinal){
 
-                            LocalDateTime time = LocalDateTime.now().withHour(17).withMinute(0).withSecond(0);
-                            compra.setValidez(time);
-                            compra.setTipoOrden("precioLimite");
-
-
-                            String url1 = "https://api.invertironline.com/api/v2/operar/Comprar";
-
-                            HttpHeaders headers1 = new HttpHeaders();
-                            headers1.set("Authorization", "Bearer " + token);
-                            headers1.setContentType(MediaType.APPLICATION_JSON);
-
-
-                            HttpEntity<Comprar> requestEntity1 = new HttpEntity<>(compra, headers1);
-
-                            // Enviar la solicitud POST y obtener la respuesta
-                            ResponseEntity<Response> responseEntity = restTemplate.exchange(
-                                    url1,
-                                    HttpMethod.POST,
-                                    requestEntity1,
-                                    Response.class);
-
-                            Response response1 = responseEntity.getBody();
+                            Response response1 = callsApiIOL.postBuyAsset(token,ticket,operacionFinal,cotizacion.getPuntas().get(0).getPrecioVenta());
 
                             if (response1 != null && response1.isOk()){
                                 System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente. Se realizo la compra de este instrumento");
@@ -326,7 +228,7 @@ public class BotMervalServiceImpl implements BotMervalService {
                     return false;
                 } catch (HttpServerErrorException e) {
                     intentos--;
-                    Thread.sleep(3000); // Esperar 5 segundos antes de reintentar
+                    Thread.sleep(2000); // Esperar 2 segundos antes de reintentar
                 }
             }
 
@@ -347,20 +249,7 @@ public class BotMervalServiceImpl implements BotMervalService {
                 BigDecimal ema21 = emas.get(2);
                 BigDecimal ema50 = emas.get(3);
 
-                String path = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+ticket.toUpperCase()+"/CotizacionDetalleMobile/t2";
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Authorization", "Bearer " + token);
-
-                HttpEntity<?> entity = new HttpEntity<>(headers);
-
-                ResponseEntity<CotizacionDetalleMobile> response = restTemplate.exchange(
-                        path,
-                        HttpMethod.GET,
-                        entity,
-                        CotizacionDetalleMobile.class
-                );
-                CotizacionDetalleMobile cotizacion = modelMapper.map(response.getBody(),CotizacionDetalleMobile.class);
+                CotizacionDetalleMobile cotizacion = callsApiIOL.getDetailCotization(token,ticket.toUpperCase());
 
                 if (cotizacion == null){
                     return false;
@@ -373,7 +262,7 @@ public class BotMervalServiceImpl implements BotMervalService {
                 return false;
             } catch (HttpServerErrorException e) {
                 intentos--;
-                Thread.sleep(4000); // Esperar 4 segundos antes de reintentar
+                Thread.sleep(2000); // Esperar 2 segundos antes de reintentar
             }
         }
         return false;
@@ -391,51 +280,7 @@ public class BotMervalServiceImpl implements BotMervalService {
         return false;
     }
 
-    //SUB-001 Este metodo se utiliza en el metodo 003 para devolverle el listado de cotizaciones segun el simbolo recibido
-    //La lista devuelve el historial de mayor a menor
-    public List<Cotizacion> getCotizaciones(String token, String simbolo) throws InterruptedException {
-        int intentos = 3;
-        while (intentos > 0) {
-            try {
-                LocalDateTime horaHasta = LocalDateTime.now().withHour(17).withHour(0).withMinute(0).withSecond(0);
-                LocalDateTime horaDesde = LocalDateTime.now().minusDays(200).withHour(11).withMinute(0).withSecond(0);
 
-
-
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                String fechaDesdeStr = horaDesde.format(formatter);
-                DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                String fechaHastaStr = horaHasta.format(formatter2);
-
-                String path = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+simbolo+"/Cotizacion/seriehistorica/"+fechaDesdeStr+"/"+fechaHastaStr+"/sinAjustar";
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Authorization", "Bearer " + token);
-
-                HttpEntity<?> entity = new HttpEntity<>(headers);
-
-                ResponseEntity<Cotizacion[]> response = restTemplate.exchange(
-                        path,
-                        HttpMethod.GET,
-                        entity,
-                        Cotizacion[].class
-                );
-
-                Cotizacion[] cotizaciones = response.getBody();
-
-                if(cotizaciones == null){
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-                }
-
-                return Arrays.asList(cotizaciones);
-            } catch (HttpServerErrorException e) {
-                intentos--;
-                Thread.sleep(3000); // Esperar 3 segundos antes de reintentar
-            }
-        }
-
-        return null;
-    }
 
     //Este metodo se utiliza para normalizar las cotizaciones recibidas y
     //objtener desde el dia anterior(habil) al actual las cotizaciones al cierre de cada dia
@@ -508,7 +353,7 @@ public class BotMervalServiceImpl implements BotMervalService {
     //aca vamos a devolver una EmaDTO, esto ahora esta solo para probar
     public List<BigDecimal> calculoEMAs(String token, String simbolo) throws InterruptedException {
 
-        List<Cotizacion> cotizaciones = getCotizaciones(token, simbolo);
+        List<Cotizacion> cotizaciones = callsApiIOL.getCotizaciones(token, simbolo);
 
         List<BigDecimal> emas = getEMAs(cotizaciones);
 
