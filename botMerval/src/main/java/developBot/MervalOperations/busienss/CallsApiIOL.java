@@ -209,7 +209,7 @@ public class CallsApiIOL {
                 return Arrays.asList(cotizaciones);
             } catch (HttpServerErrorException e) {
                 intentos--;
-                Thread.sleep(2000); // Esperar 2 segundos antes de reintentar
+                Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
             }
         }
 

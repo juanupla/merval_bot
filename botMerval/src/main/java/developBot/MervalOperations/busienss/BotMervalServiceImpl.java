@@ -1,23 +1,14 @@
-package developBot.MervalOperations.service.impl;
+package developBot.MervalOperations.busienss;
 
-import developBot.MervalOperations.busienss.CallsApiIOL;
 import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.EstadoCuenta;
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Portafolio;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
-import developBot.MervalOperations.models.clientModels.operar.Comprar;
-import developBot.MervalOperations.models.clientModels.operar.Vender;
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-import developBot.MervalOperations.service.BotMervalService;
-import org.modelmapper.ModelMapper;
 import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -27,12 +18,13 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-@Service
-public class BotMervalServiceImpl implements BotMervalService {
+
+public class BotMervalServiceImpl {
 
     private final CallsApiIOL callsApiIOL; // No inicializar aquí, sino a través del constructor
 
     public BotMervalServiceImpl(CallsApiIOL callsApiIOL) {
+
         this.callsApiIOL = callsApiIOL;
     }
 
@@ -40,7 +32,6 @@ public class BotMervalServiceImpl implements BotMervalService {
     //001 Este método elimina aquellos activos presente en la cartera de la lista inicial a recorrer ya que
     //por cada activo se abriran posiciones del 5% del capital, sin ajuste.
     //así solo se podran procesar aquellos activos que no se encuentren en cartera.
-    @Override
     public List<String> removeOperationalTickets(String token, String pais ,List<String> ticketsList) throws InterruptedException {
         int intentos = 3;
         while (intentos > 0) {
@@ -67,15 +58,15 @@ public class BotMervalServiceImpl implements BotMervalService {
                 // Por ejemplo, registrar el error y reducir el contador de intentos
                 intentos--;
                 // Esperar antes de volver a intentar (puedes ajustar el tiempo según tus necesidades)
-                Thread.sleep(5000); // Esperar 5 segundos antes de reintentar
+                Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
             }
         }
         return null;
 
     }
 
+
     //Este metodo obtiene aquellos posiciones que ESTAN en cartera, se arma y envia una lista de los mismos.
-    @Override
     public List<Posicion> operationalTickets(String token,String pais) {
         int intentos = 3;
         while (intentos > 0) {
@@ -93,9 +84,9 @@ public class BotMervalServiceImpl implements BotMervalService {
         return null;
     }
 
+
     //002 Este método eliminará aquellas ordenes que queden en estado pendiente,
     //se haya hecho una ejecucion parcial o no, se eliminaran con esta función.
-    @Override
     public List<Operacion> removePendingOrders(String token) {
 
         Operacion[] operaciones = callsApiIOL.getOperaciones(token);
@@ -132,7 +123,6 @@ public class BotMervalServiceImpl implements BotMervalService {
 
 
     //Metodo para ejecutar la venta de un activo
-    @Override
     public boolean saleOperation(String token, List<BigDecimal> emas,Posicion activo){
         if (EMAsSaleOperation(emas)){
             int intentos = 3;
@@ -168,9 +158,9 @@ public class BotMervalServiceImpl implements BotMervalService {
         return false;
     }
 
+
     //Metodo para ejecutar la compra de un activo
     //podra no operar incluso si las condiciones de EMAsPurchaseOperation estan dadas por cuestiones de capital
-    @Override
     public boolean purchaseOperation(String token, String ticket, List<BigDecimal> emas) throws InterruptedException {
         if (EMAsPurchaseOperation(token,ticket,emas)){
             int intentos = 3;
@@ -228,7 +218,7 @@ public class BotMervalServiceImpl implements BotMervalService {
                     return false;
                 } catch (HttpServerErrorException e) {
                     intentos--;
-                    Thread.sleep(2000); // Esperar 2 segundos antes de reintentar
+                    Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
                 }
             }
 
@@ -239,7 +229,6 @@ public class BotMervalServiceImpl implements BotMervalService {
 
 
     //Metodo para verificar si las disposicion de emas dan compra - Se utiliza en purchaseOperation()
-    @Override
     public boolean EMAsPurchaseOperation(String token, String ticket, List<BigDecimal> emas) throws InterruptedException {
         int intentos = 3;
         while (intentos > 0) {
@@ -262,14 +251,14 @@ public class BotMervalServiceImpl implements BotMervalService {
                 return false;
             } catch (HttpServerErrorException e) {
                 intentos--;
-                Thread.sleep(2000); // Esperar 2 segundos antes de reintentar
+                Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
             }
         }
         return false;
     }
 
+
     //Metodo para verificar si las disposicion de emas dan venta - Se utiliza en saleOperation()
-    @Override
     public boolean EMAsSaleOperation(List<BigDecimal> emas){
         BigDecimal ema3 = emas.get(0);
         BigDecimal ema9 = emas.get(1);
@@ -280,6 +269,17 @@ public class BotMervalServiceImpl implements BotMervalService {
         return false;
     }
 
+
+    //003 este método será interno y se encargara de calcular las EMAs solicitadas y se devuelven en
+    // una lista que contiene 4 BidDecimal que corresponde a cada EMA
+    public List<BigDecimal> calculoEMAs(String token, String simbolo) throws InterruptedException {
+
+        List<Cotizacion> cotizaciones = callsApiIOL.getCotizaciones(token, simbolo);
+
+        List<BigDecimal> emas = getEMAs(cotizaciones);
+
+        return emas;
+    }
 
 
     //Este metodo se utiliza para normalizar las cotizaciones recibidas y
@@ -348,17 +348,6 @@ public class BotMervalServiceImpl implements BotMervalService {
         return cotizacionNormalized;
     }
 
-    //003 este método será interno y se encargara de calcular las EMAs solicitadas y se devuelven en el objeto
-    // EmasDTO que contiene 4 BidDecimal que corresponde a cada EMA
-    //aca vamos a devolver una EmaDTO, esto ahora esta solo para probar
-    public List<BigDecimal> calculoEMAs(String token, String simbolo) throws InterruptedException {
-
-        List<Cotizacion> cotizaciones = callsApiIOL.getCotizaciones(token, simbolo);
-
-        List<BigDecimal> emas = getEMAs(cotizaciones);
-
-        return emas;
-    }
 
     //Este metodo se usara en el 003 para obtener un listados de las EMAs
     public List<BigDecimal> getEMAs(List<Cotizacion> cotizaciones){
@@ -386,6 +375,7 @@ public class BotMervalServiceImpl implements BotMervalService {
 
         return emas;
     }
+
 
     public BigDecimal getEma(Integer emaNro, BigDecimal beta, BigDecimal ema_1,List<Cotizacion> cotizacions){
 

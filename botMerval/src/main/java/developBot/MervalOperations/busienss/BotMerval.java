@@ -1,16 +1,12 @@
 package developBot.MervalOperations.busienss;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import developBot.MervalOperations.authentication.JwtUtil;
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
-import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
 import developBot.MervalOperations.service.BotMervalService;
-import developBot.MervalOperations.service.impl.BotMervalServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -30,7 +26,7 @@ public class BotMerval {
 
     private List<String> activosBot;
 
-    private BotMervalService botMervalService;
+    private BotMervalServiceImpl botMervalService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ModelMapper modelMapper = new ModelMapper();
 
@@ -143,8 +139,6 @@ public class BotMerval {
             Thread.sleep(240000);//duerme 4 minutos
 
         }while (true);//acá la condicion debe pasar a una estructura horaria que verifique si el horario esta entre las 11 y las 17hs
-
-
 
     }
 }
