@@ -7,6 +7,7 @@ import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posic
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
+import lombok.Data;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,11 +20,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class BotMervalServiceImpl {
+public class BotMervalBusiness {
 
     private final CallsApiIOL callsApiIOL; // No inicializar aquí, sino a través del constructor
 
-    public BotMervalServiceImpl(CallsApiIOL callsApiIOL) {
+    public BotMervalBusiness(CallsApiIOL callsApiIOL) {
 
         this.callsApiIOL = callsApiIOL;
     }
@@ -145,8 +146,10 @@ public class BotMervalServiceImpl {
                     Response respon = callsApiIOL.postSellAsset(token,activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precioPuntaCompra);
 
                     if (respon != null && respon.isOk()){
+                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y se realizo la VENTA de este instrumento");
                         return true;
                     }
+                    System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" no se ha procesado adecuadamente y NO realizo la VENTA de este instrumento");
                     return false;
                 }
                 catch (Exception e){
@@ -154,7 +157,7 @@ public class BotMervalServiceImpl {
                 }
             }
         }
-
+        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y NO se realizo la VENTA de este instrumento");
         return false;
     }
 
@@ -196,11 +199,11 @@ public class BotMervalServiceImpl {
                             Response response1 = callsApiIOL.postBuyAsset(token,ticket,operacionFinal,cotizacion.getPuntas().get(0).getPrecioVenta());
 
                             if (response1 != null && response1.isOk()){
-                                System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente. Se realizo la compra de este instrumento");
+                                System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente y se realizo la COMPRA de este instrumento");
                                 return true;
                             }
                             else {
-                                System.out.println("El tiket: " +ticket+" no se ha procesado adecuadamente y no se realizo la compra de este instrumento");
+                                System.out.println("El tiket: " +ticket+" no se ha procesado adecuadamente y NO se realizo la COMPRA de este instrumento");
                                 if(response1 != null){
                                     System.out.println("mensaje: " +response1.getDetalleMensajes());
                                 }
@@ -209,12 +212,12 @@ public class BotMervalServiceImpl {
                             }
 
                         }else {
-                            System.out.println("Compra del ticket: "+ticket+" no fue procesado porque la cantidad en la punta de ventas no eran suficientes");
+                            System.out.println("Compra del ticket: "+ticket+" NO fue procesado porque la cantidad en la punta de ventas no eran suficientes");
                             return false;
                         }
 
                     }
-                    System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente y no se realizo la compra por no alcanzar la unidad minima de compra");
+                    System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente y NO se realizo la COMPRA por no alcanzar la unidad minima de compra");
                     return false;
                 } catch (HttpServerErrorException e) {
                     intentos--;
@@ -390,7 +393,7 @@ public class BotMervalServiceImpl {
             BigDecimal betaResta = BigDecimal.valueOf(1).subtract(beta);
             BigDecimal multipl;
             if(i==emaNro-1){
-                multipl = betaResta.multiply(ema_1);
+                multipl = betaResta.multiply(ema_1);//en el primer calculor de la longitud de la ema, EMAt-1 es el resultado de una SMA(sample mobile averange)
             }
             else {
                 multipl = betaResta.multiply(ultimaEma);
@@ -428,7 +431,7 @@ public class BotMervalServiceImpl {
 
 
             BigDecimal acumulador = new BigDecimal("0");
-            for(int i = 20; i<42; i++){
+            for(int i = 21; i<42; i++){
                 Double ultimpPrecio = cotizaciones.get(i).getUltimoPrecio();
                 BigDecimal ultimpPrecioBigDecimal = BigDecimal.valueOf(ultimpPrecio);
                 acumulador = acumulador.add(ultimpPrecioBigDecimal);
@@ -437,7 +440,7 @@ public class BotMervalServiceImpl {
 
         } else if (emaNro == 50) {
             BigDecimal acumulador = new BigDecimal("0");
-            for(int i = 49; i<100; i++){
+            for(int i = 50; i<100; i++){
                 Double ultimpPrecio = cotizaciones.get(i).getUltimoPrecio();
                 BigDecimal ultimpPrecioBigDecimal = BigDecimal.valueOf(ultimpPrecio);
                 acumulador = acumulador.add(ultimpPrecioBigDecimal);

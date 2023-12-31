@@ -170,8 +170,7 @@ public class CallsApiIOL {
     }
 
 
-    //SUB-001 Este metodo se utiliza en el metodo 003 para devolverle el listado de cotizaciones historicas
-    //segun el simbolo recibido. La lista devuelve el historial de mayor a menor
+
     public List<Cotizacion> getCotizaciones(String token, String simbolo) throws InterruptedException {
         int intentos = 3;
         while (intentos > 0) {

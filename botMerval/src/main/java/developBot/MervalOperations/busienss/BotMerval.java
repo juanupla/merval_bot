@@ -2,7 +2,7 @@ package developBot.MervalOperations.busienss;
 
 import developBot.MervalOperations.authentication.JwtUtil;
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
-import developBot.MervalOperations.service.BotMervalService;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,7 +26,7 @@ public class BotMerval {
 
     private List<String> activosBot;
 
-    private BotMervalServiceImpl botMervalService;
+    private BotMervalBusiness botMervalService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ModelMapper modelMapper = new ModelMapper();
 
@@ -37,7 +37,7 @@ public class BotMerval {
         JwtUtil prueba = new JwtUtil();
         String token = prueba.getToken();
         CallsApiIOL callsApiIOL= new CallsApiIOL();
-        botMervalService = new BotMervalServiceImpl(callsApiIOL);
+        botMervalService = new BotMervalBusiness(callsApiIOL);
 
 
         do {
@@ -126,11 +126,6 @@ public class BotMerval {
                     System.out.println("El activo: " + activosBot.get(i).toUpperCase()+" NO puede ser operado para venta");
                 }
             }
-
-
-
-
-
 
 
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
