@@ -19,13 +19,13 @@ public class JwtUtil {
     }
 
     public String getToken() {
-    // configurar los datos
+
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-    // configurar los parametros
+
     String requestBody = requestBody();
     HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
-    // realizar la solicitud
+
     RestTemplate restTemplate = new RestTemplate();
     ResponseEntity<String> response = restTemplate.postForEntity("https://api.invertironline.com/token", request, String.class);
     String resp = extractToken(response.getBody());
@@ -44,7 +44,7 @@ public class JwtUtil {
     }
 
     private String requestBody(){
-        return "username=";
+        return "username=&password=&grant_type=password";
     }
 
     private String requestBodyRefresh(){

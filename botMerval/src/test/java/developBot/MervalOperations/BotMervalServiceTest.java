@@ -12,25 +12,21 @@ import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.Punta;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-
 import developBot.MervalOperations.busienss.BotMervalBusiness;
 import org.junit.jupiter.api.Assertions;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.*;
-
-
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
@@ -188,7 +184,7 @@ public class BotMervalServiceTest {
             when(cotizacionMock.getUltimoPrecio()).thenReturn(200.0);
 
             //cotizacionMock.getFechaHora() es llamado multiples veces en getEma, a su vez llama a normalizeCotization();
-            LocalDateTime localDateTime = LocalDateTime.now().minusDays(i-1);
+            LocalDateTime localDateTime = LocalDateTime.now().minusDays(i+1).withHour(16);
             when(cotizacionMock.getFechaHora()).thenReturn(localDateTime.toString());
             cotizacionesMock.add(cotizacionMock);
         }
@@ -287,11 +283,18 @@ public class BotMervalServiceTest {
     @Test
     public void normalizeCotizationTest(){
 
-        //este test debe traer cotizaciones de cada dia
-        //hay que tener en cuenta que la API IOL devuelve muchas cotizaciones de los 2 dias ahbiles anteriores.
+        //este test debe traer cotizaciones de cada dia.
+        //hay que tener en cuenta que la API IOL devuelve 'muchas' cotizaciones de los "2 dias" ahbiles anteriores.
         //siempre buscaremos 1 sola cotizacion del dia y en particular estas dos se busca la cotizacion mas
         //cercana al cierre de mercado (17hs)
 
+
+        //Otro tema es que a la hora de procesar test pueden aparecer cotizaciones con fecha de los fines de semana
+        //ya que las preubas utilizan LocalDateTime.now(). Esto no supone un problema ya que la API
+        //y por logica del funcionamiento del sistema financiero no brindara fechas de cotizaciones tales dias.
+        //a fines de probar el metodo alcanza. ya que garantiza un dia habil para diaDeAyer y para diaAntesDeAyer
+        //y todas las cotizaciones por detas(que la api solo devolvera 1 cotizacion por cada día, a excepcion de los 2 dias
+        // habiles anteriores ya mencionados)
         Cotizacion cotizacion = new Cotizacion();
         Cotizacion cotizacion1 = new Cotizacion();
         Cotizacion cotizacion2 = new Cotizacion();
@@ -301,18 +304,27 @@ public class BotMervalServiceTest {
         Cotizacion cotizacion6 = new Cotizacion();
         Cotizacion cotizacion7 = new Cotizacion();
         Cotizacion cotizacion8 = new Cotizacion();
+        Cotizacion cotizacion9 = new Cotizacion();
+        Cotizacion cotizacion10 = new Cotizacion();
+        Cotizacion cotizacion11 = new Cotizacion();
+        Cotizacion cotizacion12 = new Cotizacion();
 
-        cotizacion.setFechaHora(LocalDateTime.now().minusDays(1).withHour(13).withMinute(10).withSecond(10).toString());
+        cotizacion.setFechaHora(LocalDateTime.now().minusDays(1).withHour(16).withMinute(10).withSecond(10).toString());
         cotizacion1.setFechaHora(LocalDateTime.now().minusDays(1).withHour(13).withMinute(15).withSecond(10).toString());
         cotizacion2.setFechaHora(LocalDateTime.now().minusDays(1).withHour(13).withMinute(25).withSecond(10).toString());
         cotizacion3.setFechaHora(LocalDateTime.now().minusDays(2).withHour(14).toString());
-        cotizacion4.setFechaHora(LocalDateTime.now().minusDays(2).withHour(15).toString());
-        cotizacion5.setFechaHora(LocalDateTime.now().minusDays(3).withHour(16).toString());
-        cotizacion6.setFechaHora(LocalDateTime.now().minusDays(4).withHour(14).toString());
-        cotizacion7.setFechaHora(LocalDateTime.now().minusDays(5).withHour(13).toString());
-        cotizacion8.setFechaHora(LocalDateTime.now().minusDays(6).withHour(16).toString());
+        cotizacion4.setFechaHora(LocalDateTime.now().minusDays(2).withHour(16).withMinute(2).toString());
+        cotizacion5.setFechaHora(LocalDateTime.now().minusDays(3).withHour(16).withMinute(1).toString());
+        cotizacion6.setFechaHora(LocalDateTime.now().minusDays(4).withHour(16).withMinute(32).toString());
+        cotizacion7.setFechaHora(LocalDateTime.now().minusDays(5).withHour(16).withMinute(3).toString());
+        cotizacion8.setFechaHora(LocalDateTime.now().minusDays(6).withHour(16).withMinute(3).toString());
+        cotizacion9.setFechaHora(LocalDateTime.now().minusDays(7).withHour(16).withMinute(3).toString());
+        cotizacion10.setFechaHora(LocalDateTime.now().minusDays(8).withHour(16).withMinute(3).toString());
+        cotizacion11.setFechaHora(LocalDateTime.now().minusDays(9).withHour(16).withMinute(3).toString());
+        cotizacion12.setFechaHora(LocalDateTime.now().minusDays(10).withHour(16).withMinute(3).toString());
         List<Cotizacion> cotizacions = Arrays.asList(cotizacion,
-                cotizacion1,cotizacion2,cotizacion3,cotizacion4,cotizacion5,cotizacion6,cotizacion7,cotizacion8);
+                cotizacion1,cotizacion2,cotizacion3,cotizacion4,cotizacion5,cotizacion6,cotizacion7,cotizacion8,
+                cotizacion9,cotizacion10,cotizacion11,cotizacion12);
 
         BotMervalBusiness botMervalService = new BotMervalBusiness(callsApiIOLMock);
         List<Cotizacion> cotizacionNormalized = botMervalService.normalizeCotization(cotizacions);
@@ -320,13 +332,25 @@ public class BotMervalServiceTest {
         LocalDateTime now = LocalDateTime.now();
         for (Cotizacion c: cotizacionNormalized) {
             if (c.getFechaHora().compareTo(now.toString())<0){
-                //System.out.println(c.getFechaHora());              //Descomenta si queres visualizarel resultado
+                System.out.println(c.getFechaHora());              //Descomenta si queres visualizarel resultado
                 now = LocalDateTime.parse(c.getFechaHora());
             }else {
                 Assertions.fail();
             }
         }
         Assertions.assertTrue(true);
+
+        LocalDateTime ayer = LocalDateTime.parse(cotizacionNormalized.get(0).getFechaHora());
+        LocalDateTime antesAyer = LocalDateTime.parse(cotizacionNormalized.get(1).getFechaHora());
+
+        DayOfWeek ayerDia = ayer.getDayOfWeek();
+        DayOfWeek antesAyerDia = antesAyer.getDayOfWeek();
+
+        assertNotEquals("SUNDAY",ayerDia.name());
+        assertNotEquals("SATURDAY",ayerDia.name());
+        assertNotEquals("SUNDAY",antesAyerDia.name());
+        assertNotEquals("SATURDAY",antesAyerDia.name());
+
     }
 
 
@@ -347,7 +371,7 @@ public class BotMervalServiceTest {
             when(cotizacionMock.getUltimoPrecio()).thenReturn(200.0);
 
             //cotizacionMock.getFechaHora() es llamado multiples veces en getEma, a su vez llama a normalizeCotization();
-            LocalDateTime localDateTime = LocalDateTime.now().minusDays(i-1);
+            LocalDateTime localDateTime = LocalDateTime.now().minusDays(i+1).withHour(16);
             when(cotizacionMock.getFechaHora()).thenReturn(localDateTime.toString());
             cotizacionesMock.add(cotizacionMock);
         }
@@ -374,7 +398,7 @@ public class BotMervalServiceTest {
             when(cotizacionMock.getUltimoPrecio()).thenReturn(200.0);
 
             //cotizacionMock.getFechaHora() es llamado multiples veces en normalizeCotization();
-            LocalDateTime localDateTime = LocalDateTime.now().minusDays(i-1);
+            LocalDateTime localDateTime = LocalDateTime.now().minusDays(i+1).withHour(16);
             when(cotizacionMock.getFechaHora()).thenReturn(localDateTime.toString());
             cotizacionesMock.add(cotizacionMock);
         }
@@ -446,5 +470,39 @@ public class BotMervalServiceTest {
         assertEquals(new BigDecimal("0.03921569"),result.setScale(8,RoundingMode.HALF_UP));
     }
 
+    @Test
+    public void isItFeriadoTest(){
+        LocalDate anoNuevo = LocalDate.of(2024, Month.JANUARY, 1);
+        LocalDate carnaval1 = LocalDate.of(2024, Month.FEBRUARY, 12);
+        LocalDate carnaval2 = LocalDate.of(2024, Month.FEBRUARY, 13);
+        LocalDate diaMemoria = LocalDate.of(2024, Month.MARCH, 24);
+        LocalDate viernesSanto = LocalDate.of(2024, Month.MARCH, 29);
+        LocalDate feriadoTuristico1 = LocalDate.of(2024, Month.APRIL, 1);
+        LocalDate diaMalvinas = LocalDate.of(2024, Month.APRIL, 2);
+        LocalDate diaTrabajador = LocalDate.of(2024, Month.MAY, 1);
+        LocalDate revolucionMayo = LocalDate.of(2024, Month.MAY, 25);
+        LocalDate belgrano = LocalDate.of(2024, Month.JUNE, 20);
+        LocalDate feriadoTuristico2 = LocalDate.of(2024, Month.JUNE, 21);
+        LocalDate diaIndependencia = LocalDate.of(2024, Month.JULY, 9);
+        LocalDate feriadoTuristico3 = LocalDate.of(2024, Month.OCTOBER, 11);
+        LocalDate inmaculadaConcepcion = LocalDate.of(2024, Month.DECEMBER, 8);
+        LocalDate navidad = LocalDate.of(2024, Month.DECEMBER, 25);
+        LocalDate gueemes = LocalDate.of(2024, Month.JUNE, 17);
+        LocalDate sanMartin = LocalDate.of(2024, Month.AUGUST, 17);
+        LocalDate diversidadCultural = LocalDate.of(2024, Month.OCTOBER, 12);
+        LocalDate soberaniaNacional = LocalDate.of(2024, Month.NOVEMBER, 18);
+
+        List<LocalDateTime> date = new ArrayList<>(Arrays.asList(anoNuevo.atStartOfDay(), carnaval1.atStartOfDay(),
+                carnaval2.atStartOfDay(), diaMemoria.atStartOfDay(), viernesSanto.atStartOfDay(),
+                feriadoTuristico1.atStartOfDay(), diaMalvinas.atStartOfDay(), diaTrabajador.atStartOfDay(),
+                revolucionMayo.atStartOfDay(), belgrano.atStartOfDay(), feriadoTuristico2.atStartOfDay(),
+                diaIndependencia.atStartOfDay(), feriadoTuristico3.atStartOfDay(), inmaculadaConcepcion.atStartOfDay(),
+                navidad.atStartOfDay(), gueemes.atStartOfDay(), sanMartin.atStartOfDay(),
+                diversidadCultural.atStartOfDay(), soberaniaNacional.atStartOfDay()));
+        BotMervalBusiness botMervalBusiness = new BotMervalBusiness(callsApiIOLMock);
+        for (LocalDateTime time:date) {
+            assertTrue(botMervalBusiness.isItFeriado(time));
+        }
+    }
 
 }

@@ -7,7 +7,6 @@ import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posic
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-import lombok.Data;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,7 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -135,7 +136,8 @@ public class BotMervalBusiness {
                     CotizacionDetalleMobile cotizacion = callsApiIOL.getDetailCotization(token,activo.getTitulo().getSimbolo().toUpperCase());
 
                     if(cotizacion == null){
-                        break;
+                        System.out.println("El activo: " +activo.getTitulo().getSimbolo().toUpperCase()+" devolvio null al consultar getDetailCotization()");
+                        return false;
                     }
 
                     //-------------Venta---------------
@@ -149,8 +151,10 @@ public class BotMervalBusiness {
                         System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y se realizo la VENTA de este instrumento");
                         return true;
                     }
-                    System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" no se ha procesado adecuadamente y NO realizo la VENTA de este instrumento");
-                    return false;
+                    else {
+                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" no se ha procesado adecuadamente y NO realizo la VENTA de este instrumento");
+                        return false;
+                    }
                 }
                 catch (Exception e){
                     intentos --;
@@ -179,11 +183,13 @@ public class BotMervalBusiness {
 
                     //que al menos se púeda comprar 1
                     if(cotizacion == null || valor5PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){
+                        System.out.println("el 5% de la cartera no es suficiente para operar alo menos 1 unidad del tiket: " +ticket);
                         return false;
                     }
 
                     //los findos "disponibles" no poseen el 5% sobre el total de la cartera para operar este activo
                     if(valor5PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){
+                        System.out.println("Los fondos 'Disponibles' no cubren el 5% del capital total para operar este activo: " +ticket);
                         return false;
                     }
 
@@ -199,7 +205,7 @@ public class BotMervalBusiness {
                             Response response1 = callsApiIOL.postBuyAsset(token,ticket,operacionFinal,cotizacion.getPuntas().get(0).getPrecioVenta());
 
                             if (response1 != null && response1.isOk()){
-                                System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente y se realizo la COMPRA de este instrumento");
+                                System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente y se realizo la COMPRA de "+operacionFinal+" unidades de este instrumento");
                                 return true;
                             }
                             else {
@@ -289,28 +295,53 @@ public class BotMervalBusiness {
     //objtener desde el dia anterior(habil) al actual las cotizaciones al cierre de cada dia
     //este metodo se utiliza en el getEma
     public List<Cotizacion> normalizeCotization(List<Cotizacion> cotizaciones){
+
+
         List<Cotizacion> cotizacionNormalized = new ArrayList<>();
 
 
-        LocalDateTime fecha = LocalDateTime.now().minusDays(1);
-        if (isItMondaySundayOrSaturday(fecha).equals("MONDAY")){
-            fecha = fecha.minusDays(2);//queda parado en sabado, pero en la logica que sigue se va a restar 1
-        }
-        if (isItMondaySundayOrSaturday(fecha).equals("SUNDAY")){
-            fecha = fecha.minusDays(1);//queda parado en sabado, pero en la logica que sigue se va a restar 1
-        }
-
-        LocalDateTime fechaAyer = fecha.minusDays(1);
+        LocalDateTime fechaAyer = LocalDateTime.now().minusDays(1);
         LocalDateTime fechaAntesDeAyer = LocalDateTime.now();
-        if(isItMondaySundayOrSaturday(fechaAyer).equals("MONDAY")){
-            fechaAntesDeAyer = fecha.minusDays(4);
-        }else {
-            fechaAntesDeAyer = fechaAntesDeAyer.minusDays(2);
-        }
-        fechaAyer = fechaAyer.withHour(16);  //los horarios de mercado son de las 11 a 17hs, necesito obtener la ultima cotizacion del dia
-        fechaAntesDeAyer = fechaAyer.withHour(16);
 
-        LocalDateTime fechaReferente = fechaAyer.withHour(18);
+        //si ayer es feriado restar 1 dia, luego corroborar que no quede en fin de semana, si queda finde restar otro dia
+        while (isItFeriado(fechaAyer)){
+            fechaAyer = fechaAyer.minusDays(1);
+            if (isItMondaySundayOrSaturday(fechaAyer).equals("SUNDAY")){
+                fechaAyer = fechaAyer.minusDays(2);
+            } else if (isItMondaySundayOrSaturday(fechaAyer).equals("SATURDAY")) {
+                fechaAyer = fechaAyer.minusDays(1);
+            }
+        }
+        //si la fecha de ayer cae lunes, la fecha a buscar para antesDeAyer debe ser viernes
+        if (isItMondaySundayOrSaturday(fechaAyer).equals("MONDAY")){
+            fechaAntesDeAyer = fechaAyer.minusDays(3);
+            //si viernes es feriado restar 1 dia, luego corroborar que no quede en fin de semana, si queda finde restar otro dia
+            while (isItFeriado(fechaAntesDeAyer)){
+                fechaAntesDeAyer = fechaAntesDeAyer.minusDays(1);
+                if (isItMondaySundayOrSaturday(fechaAntesDeAyer).equals("SUNDAY")){
+                    fechaAntesDeAyer = fechaAntesDeAyer.minusDays(2);
+                } else if (isItMondaySundayOrSaturday(fechaAntesDeAyer).equals("SATURDAY")) {
+                    fechaAntesDeAyer = fechaAntesDeAyer.minusDays(1);
+                }
+            }
+        }
+        else {
+            //si fecha de ayer no cae lunes, entonces fecha antesDeAyer es: fechaAyer -1. salvo
+            //que al hacer esta cuenta caiga en un feriado
+            fechaAntesDeAyer = fechaAyer.minusDays(1);
+            while (isItFeriado(fechaAntesDeAyer)){
+                fechaAntesDeAyer = fechaAntesDeAyer.minusDays(1);
+                if (isItMondaySundayOrSaturday(fechaAntesDeAyer).equals("SUNDAY")){
+                    fechaAntesDeAyer = fechaAntesDeAyer.minusDays(2);
+                } else if (isItMondaySundayOrSaturday(fechaAntesDeAyer).equals("SATURDAY")) {
+                    fechaAntesDeAyer = fechaAntesDeAyer.minusDays(1);
+                }
+            }
+        }
+
+        fechaAyer = fechaAyer.withHour(16).withMinute(0);  //los horarios de mercado son de las 11 a 17hs, necesito obtener la ultima cotizacion del dia
+        fechaAntesDeAyer = fechaAntesDeAyer.withHour(16).withMinute(0);
+
 
         Cotizacion cotizacionFechaAyer = new Cotizacion();
         Cotizacion cotizacionFechaAntesDeAyer = new Cotizacion();
@@ -322,9 +353,8 @@ public class BotMervalBusiness {
                 LocalDateTime fechaConvertida = LocalDateTime.parse(cotizaciones.get(j).getFechaHora(), formatter);
                 fechaAyer = fechaConvertida;
                 cotizacionFechaAyer = cotizaciones.get(j);
-            }
-            if(cotizaciones.get(j).getFechaHora().compareTo(fechaAntesDeAyer.toString())>0 &&
-                    cotizaciones.get(j).getFechaHora().compareTo(fechaReferente.toString())<0){
+            } else if (cotizaciones.get(j).getFechaHora().compareTo(fechaAntesDeAyer.withHour(10).toString())>0 &&
+                    cotizaciones.get(j).getFechaHora().compareTo(fechaAntesDeAyer.withHour(17).withMinute(10).toString())<0){
 
                 DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
                 LocalDateTime fechaConvertida = LocalDateTime.parse(cotizaciones.get(j).getFechaHora(), formatter);
@@ -334,12 +364,13 @@ public class BotMervalBusiness {
         }
         //hasta acá encuentro los dos dias anteriores de cotizacion, tienen muchas cotizaciones(intradiarias) y solo quiero las del cierre
 
+        cotizacionNormalized.add(cotizacionFechaAyer);
+        cotizacionNormalized.add(cotizacionFechaAntesDeAyer);
+
         //ahora, elimino todas esas fechas, solo me voy a quedar con las que seleccione en el paso anterior
-        LocalDateTime eliminarRango = fechaAntesDeAyer.withHour(1);
+        LocalDateTime eliminarRango = fechaAntesDeAyer.withHour(0);
         for (int k = 0; k < cotizaciones.size(); k++) {
-            if (cotizaciones.get(k).getFechaHora().compareTo(eliminarRango.toString())>0
-                    && !cotizaciones.get(k).equals(cotizacionFechaAyer)
-                    && !cotizaciones.get(k).equals(cotizacionFechaAntesDeAyer))
+            if (cotizaciones.get(k).getFechaHora().compareTo(eliminarRango.toString())>0)
             {
                 continue;
             }
@@ -351,6 +382,60 @@ public class BotMervalBusiness {
         return cotizacionNormalized;
     }
 
+    //Fecha de feriados en Argentina
+    //esta lista debe actualizarse cada año
+    public boolean isItFeriado (LocalDateTime fecha){
+        List<LocalDateTime> localDateTimes = new ArrayList<>();
+
+        LocalDate anoNuevo = LocalDate.of(2024, Month.JANUARY, 1);
+        LocalDate carnaval1 = LocalDate.of(2024, Month.FEBRUARY, 12);
+        LocalDate carnaval2 = LocalDate.of(2024, Month.FEBRUARY, 13);
+        LocalDate diaMemoria = LocalDate.of(2024, Month.MARCH, 24);
+        LocalDate viernesSanto = LocalDate.of(2024, Month.MARCH, 29);
+        LocalDate feriadoTuristico1 = LocalDate.of(2024, Month.APRIL, 1);
+        LocalDate diaMalvinas = LocalDate.of(2024, Month.APRIL, 2);
+        LocalDate diaTrabajador = LocalDate.of(2024, Month.MAY, 1);
+        LocalDate revolucionMayo = LocalDate.of(2024, Month.MAY, 25);
+        LocalDate belgrano = LocalDate.of(2024, Month.JUNE, 20);
+        LocalDate feriadoTuristico2 = LocalDate.of(2024, Month.JUNE, 21);
+        LocalDate diaIndependencia = LocalDate.of(2024, Month.JULY, 9);
+        LocalDate feriadoTuristico3 = LocalDate.of(2024, Month.OCTOBER, 11);
+        LocalDate inmaculadaConcepcion = LocalDate.of(2024, Month.DECEMBER, 8);
+        LocalDate navidad = LocalDate.of(2024, Month.DECEMBER, 25);
+        LocalDate gueemes = LocalDate.of(2024, Month.JUNE, 17);
+        LocalDate sanMartin = LocalDate.of(2024, Month.AUGUST, 17);
+        LocalDate diversidadCultural = LocalDate.of(2024, Month.OCTOBER, 12);
+        LocalDate soberaniaNacional = LocalDate.of(2024, Month.NOVEMBER, 18);
+
+        localDateTimes.add(anoNuevo.atStartOfDay());
+        localDateTimes.add(carnaval1.atStartOfDay());
+        localDateTimes.add(carnaval2.atStartOfDay());
+        localDateTimes.add(diaMemoria.atStartOfDay());
+        localDateTimes.add(viernesSanto.atStartOfDay());
+        localDateTimes.add(feriadoTuristico1.atStartOfDay());
+        localDateTimes.add(diaMalvinas.atStartOfDay());
+        localDateTimes.add(diaTrabajador.atStartOfDay());
+        localDateTimes.add(revolucionMayo.atStartOfDay());
+        localDateTimes.add(belgrano.atStartOfDay());
+        localDateTimes.add(feriadoTuristico2.atStartOfDay());
+        localDateTimes.add(diaIndependencia.atStartOfDay());
+        localDateTimes.add(feriadoTuristico3.atStartOfDay());
+        localDateTimes.add(inmaculadaConcepcion.atStartOfDay());
+        localDateTimes.add(navidad.atStartOfDay());
+        localDateTimes.add(gueemes.atStartOfDay());
+        localDateTimes.add(sanMartin.atStartOfDay());
+        localDateTimes.add(diversidadCultural.atStartOfDay());
+        localDateTimes.add(soberaniaNacional.atStartOfDay());
+
+        fecha = fecha.withHour(1).withMinute(0).withSecond(0).withNano(0);
+        for (LocalDateTime localDateTime: localDateTimes) {
+            localDateTime = localDateTime.withHour(1).withMinute(0).withSecond(0).withNano(0);
+            if (localDateTime.equals(fecha)){
+                return true;
+            }
+        }
+        return false;
+    }
 
     //Este metodo se usara en el 003 para obtener un listados de las EMAs
     public List<BigDecimal> getEMAs(List<Cotizacion> cotizaciones){

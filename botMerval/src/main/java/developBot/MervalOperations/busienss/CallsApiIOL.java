@@ -10,7 +10,6 @@ import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotiza
 import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
@@ -168,8 +167,6 @@ public class CallsApiIOL {
 
         return response;
     }
-
-
 
     public List<Cotizacion> getCotizaciones(String token, String simbolo) throws InterruptedException {
         int intentos = 3;
