@@ -12,9 +12,9 @@ import java.util.List;
 public class Titulo {
     private String simbolo;
     private String descripcion;
-    private List<String> pais;
-    private List<String> mercado;
-    private List<String> tipo;
-    private List<String> plazo;
-    private List<String> moneda;
+    private String pais;
+    private String mercado;
+    private String tipo;
+    private String plazo;
+    private String moneda;
 }

@@ -4,6 +4,7 @@ import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.Est
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Portafolio;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
+import developBot.MervalOperations.models.clientModels.operar.PurcheaseResponse;
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
@@ -44,15 +45,36 @@ public class BotMervalBusiness {
                 if(portafolio == null){
                     break;
                 }
-
+                List<String> fin = new ArrayList<>();
                 if(portafolio.getActivos().size() > 0){
-                    for (Posicion activo: portafolio.getActivos()) {
-                        for(int i = 0; i<ticketsList.size();i++){
-                            if(ticketsList.get(i).equalsIgnoreCase(activo.getTitulo().getSimbolo())){
-                                ticketsList.remove(i);
+//                    for (Posicion activo: portafolio.getActivos()) {
+//                        boolean flag = false;
+//                        String ultimoTicket = "";
+//                        for(int i = 0; i<ticketsList.size();i++){
+//                            ultimoTicket = ticketsList.get(i);
+//                            if(ticketsList.get(i).equalsIgnoreCase(activo.getTitulo().getSimbolo())){
+//                                flag = true;
+//                                break;
+//                            }
+//                        }
+//                        if (!flag){
+//                            fin.add(ultimoTicket);
+//                        }
+//                    }
+//                    return fin;
+                    for (String ticket:ticketsList) {
+                        boolean flag = false;
+                        for(int i = 0; i<portafolio.getActivos().size();i++) {
+                            if(ticket.equalsIgnoreCase(portafolio.getActivos().get(i).getTitulo().getSimbolo())){
+                               flag = true;
+                               break;
                             }
                         }
+                        if (!flag){
+                            fin.add(ticket);
+                        }
                     }
+                    return fin;
                 }
                 return ticketsList;
             } catch (HttpServerErrorException e) {
@@ -142,17 +164,22 @@ public class BotMervalBusiness {
 
                     //-------------Venta---------------
 
-                    Integer cantidad = activo.getCantidad();
+                    Double cantidad = activo.getCantidad();
                     Double precioPuntaCompra = cotizacion.getPuntas().get(0).getPrecioCompra(); //precio obtenido en operaciones anteriores(segun precio obtenido de las puntas - CotizacionDetalleMobile- )
 
-                    Response respon = callsApiIOL.postSellAsset(token,activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precioPuntaCompra);
+                    PurcheaseResponse respon = callsApiIOL.postSellAsset(token,activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precioPuntaCompra);
 
-                    if (respon != null && respon.isOk()){
-                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y se realizo la VENTA de este instrumento");
+                    if (respon != null && respon.getNumeroOperacion() != null && respon.getNumeroOperacion()>0){
+                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y se realizo la VENTA de este instrumento"+"\n"+
+                                "El numero de operacion es: " + respon.getNumeroOperacion());
                         return true;
                     }
                     else {
-                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" no se ha procesado adecuadamente y NO realizo la VENTA de este instrumento");
+                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" NO se ha procesado adecuadamente y NO realizo la VENTA de este instrumento");
+                        if (respon!= null && respon.getTitle() != null && respon.getDescription()!= null){
+                            System.out.println("Title: " + respon.getTitle()+"\n"+
+                            "Description: " + respon.getDescription());
+                        }
                         return false;
                     }
                 }
@@ -202,16 +229,19 @@ public class BotMervalBusiness {
                         //que la cantidad en la punta de venta sea igual o mayor a la cantidad de mi intencion de compra
                         if(cotizacion.getPuntas().get(0).getCantidadVenta() >= operacionFinal){
 
-                            Response response1 = callsApiIOL.postBuyAsset(token,ticket,operacionFinal,cotizacion.getPuntas().get(0).getPrecioVenta());
+                            PurcheaseResponse response1 = callsApiIOL.postBuyAsset(token,ticket,operacionFinal,cotizacion.getPuntas().get(0).getPrecioVenta());
 
-                            if (response1 != null && response1.isOk()){
-                                System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente y se realizo la COMPRA de "+operacionFinal+" unidades de este instrumento");
+
+                            if (response1 != null && response1.getNumeroOperacion() != null && response1.getNumeroOperacion()>0){
+                                System.out.println("El tiket: " +ticket+" se ha procesado adecuadamente y se realizo la COMPRA de "+operacionFinal+" unidades de este instrumento"+"\n"+
+                                        "El numero de operacion es: " + response1.getNumeroOperacion());
                                 return true;
                             }
                             else {
-                                System.out.println("El tiket: " +ticket+" no se ha procesado adecuadamente y NO se realizo la COMPRA de este instrumento");
-                                if(response1 != null){
-                                    System.out.println("mensaje: " +response1.getDetalleMensajes());
+                                System.out.println("El tiket: " +ticket+" NO se ha procesado adecuadamente y NO se realizo la COMPRA de este instrumento");
+                                if (response1!= null && response1.getTitle() != null && response1.getDescription()!= null){
+                                    System.out.println("Title: " + response1.getTitle()+"\n"+
+                                            "Description: " + response1.getDescription());
                                 }
 
                                 return false;

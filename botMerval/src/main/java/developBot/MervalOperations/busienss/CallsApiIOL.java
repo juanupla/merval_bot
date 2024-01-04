@@ -4,6 +4,7 @@ import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.Est
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Portafolio;
 import developBot.MervalOperations.models.clientModels.operar.Comprar;
+import developBot.MervalOperations.models.clientModels.operar.PurcheaseResponse;
 import developBot.MervalOperations.models.clientModels.operar.Vender;
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
@@ -36,11 +37,11 @@ public class CallsApiIOL {
         headers.set("Authorization", "Bearer " + token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        Map<String, String> urlParams = new HashMap<>();
-        urlParams.put("pais", pais);
+//        Map<String, String> urlParams = new HashMap<>();
+//        urlParams.put("pais", pais);
 
-        ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/portafolio/{pais}",
-                HttpMethod.GET,entity, Portafolio.class,urlParams);
+        ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/portafolio/"+pais,
+                HttpMethod.GET,entity, Portafolio.class);
 
         Portafolio portafolio = portafolioResponseEntity.getBody();
         return portafolio;
@@ -100,13 +101,13 @@ public class CallsApiIOL {
         return cotizacion;
     }
 
-    public Response postSellAsset(String token, String simbolo, Integer cantidadVenta, Double precioPuntaCompra){
+    public PurcheaseResponse postSellAsset(String token, String simbolo, Double cantidadVenta, Double precioPuntaCompra){
         String path = "https://api.invertironline.com/api/v2/operar/Vender";
 
         LocalDateTime validez = LocalDateTime.now().withHour(17);
         String tipoOrden = "precioLimite";
         String plazo = "t2";
-        Vender venta = new Vender("bCBA",simbolo.toUpperCase(),cantidadVenta,precioPuntaCompra,validez,tipoOrden,plazo,null);
+        Vender venta = new Vender("bCBA",simbolo.toUpperCase(),cantidadVenta,precioPuntaCompra,validez.toString(),tipoOrden,plazo,null);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
@@ -114,9 +115,9 @@ public class CallsApiIOL {
 
         HttpEntity<Vender> entity = new HttpEntity<>(venta,headers);
 
-        ResponseEntity<Response> resp = restTemplate.exchange(path,HttpMethod.POST,entity,Response.class);
+        ResponseEntity<PurcheaseResponse> resp = restTemplate.exchange(path,HttpMethod.POST,entity,PurcheaseResponse.class);
 
-        Response respon = resp.getBody();
+        PurcheaseResponse respon = resp.getBody();
         return respon;
     }
 
@@ -134,7 +135,7 @@ public class CallsApiIOL {
         return estadoCuenta;
     }
 
-    public Response postBuyAsset(String token, String simbolo, Integer cantidad, Double precioPuntaVenta){
+    public PurcheaseResponse postBuyAsset(String token, String simbolo, Integer cantidad, Double precioPuntaVenta){
         Comprar compra = new Comprar();
         compra.setMercado("bCBA");
         compra.setSimbolo(simbolo);
@@ -142,9 +143,11 @@ public class CallsApiIOL {
         compra.setPrecio(precioPuntaVenta);
         compra.setPlazo("t2");
 
-        LocalDateTime time = LocalDateTime.now().withHour(17).withMinute(0).withSecond(0);
-        compra.setValidez(time);
+        LocalDateTime time = LocalDateTime.now().withHour(16).withMinute(59).withSecond(0);
+        compra.setValidez(time.toString());
         compra.setTipoOrden("precioLimite");
+        compra.setMonto(null);
+        compra.setIdFuente(0);
 
 
         String url = "https://api.invertironline.com/api/v2/operar/Comprar";
@@ -157,13 +160,13 @@ public class CallsApiIOL {
         HttpEntity<Comprar> requestEntity = new HttpEntity<>(compra, headers);
 
         // Enviar la solicitud POST y obtener la respuesta
-        ResponseEntity<Response> responseEntity = restTemplate.exchange(
+        ResponseEntity<PurcheaseResponse> responseEntity = restTemplate.exchange(
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                Response.class);
+                PurcheaseResponse.class);
 
-        Response response = responseEntity.getBody();
+        PurcheaseResponse response = responseEntity.getBody();
 
         return response;
     }

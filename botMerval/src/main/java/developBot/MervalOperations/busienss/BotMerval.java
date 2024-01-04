@@ -63,7 +63,7 @@ public class BotMerval {
 
             //Activos operados por el bot:
             String totalTickets = "AMZN,GOOGL,TSLA,GLOB,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,LOMA,BYMA,NVDA,YPFD,MSFT,PAMP,HAVA,AGRO,COME,PYPL,DISN,MELI,AAPL,BA.C,MCD,GOLD,PG,META,PBR,NKE,WMT,V,NFLX,VALE,CAT,BABA,BMA,SUPV,GGAL,ARKK";
-
+            //
             String[] elementos = totalTickets.split(",");
             activosBot = Arrays.asList(elementos);
 
@@ -79,7 +79,9 @@ public class BotMerval {
                         print.append(" ").append(ticket);
                         flag = true;
                     }
-                    print.append(", ").append(ticket);
+                    else {
+                        print.append(", ").append(ticket);
+                    }
                 }
             }
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -96,18 +98,21 @@ public class BotMerval {
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
             System.out.println("Observacion de venta de activos en cartera: ");
             List<Posicion> ticketsEnCartera = botMervalService.operationalTickets(token,"argentina");
+            boolean flag = false;
             if (ticketsEnCartera != null){
                 for (Posicion p : ticketsEnCartera) {
                     List<BigDecimal> emas = botMervalService.calculoEMAs(token,p.getTitulo().getSimbolo().toUpperCase());
                     if (botMervalService.EMAsSaleOperation(emas)){
                         boolean venta = botMervalService.saleOperation(token,emas,p);
                         if(venta){
+                            System.out.println("se realizo la venta del activo: " +p.getTitulo().getSimbolo());
                             System.out.println("-------------------------------------------------------");
+                            flag = true;
                         }
                     }
                 }
             }
-            else {
+            if(!flag) {
                 System.out.println("No hay ventas sobre ningun activo en cartera");
             }
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -128,6 +133,9 @@ public class BotMerval {
                     System.out.println("-------------------------------------------------------");
                     if(puedeComprar){
                         botMervalService.purchaseOperation(token,activosBot.get(i).toUpperCase(),list);
+                    }
+                    else {
+                        System.out.println("el ticket "+ activosBot.get(i).toUpperCase() + " está fuera de rango estrategico y NO fue operado");
                     }
 
                 }

@@ -12,10 +12,10 @@ import java.time.LocalDateTime;
 public class Vender {
     private String mercado;
     private String simbolo;
-    private Integer cantidad;
+    private Double cantidad;
     private Double precio;
-    private LocalDateTime validez;
+    private String validez;
     private String tipoOrden;///precioLimite
     private String plazo;//t0-t2
-    private Long idFuente;
+    private Integer idFuente;
 }

@@ -15,8 +15,8 @@ public class Comprar {
     private Long cantidad;
     private Double precio;
     private String plazo;//t0-t2
-    private LocalDateTime validez;
+    private String validez;
     private String tipoOrden;//precioLimite
     private Double monto;
-    private Long idFuente;
+    private Integer idFuente;
 }

@@ -8,6 +8,7 @@ import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Oper
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Portafolio;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Titulo;
+import developBot.MervalOperations.models.clientModels.operar.PurcheaseResponse;
 import developBot.MervalOperations.models.clientModels.responseModel.Response;
 import developBot.MervalOperations.models.clientModels.titulos.Punta;
 import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
@@ -213,8 +214,8 @@ public class BotMervalServiceTest {
         cotizacionDetalleMobile.setPuntas(Arrays.asList(punta,punta2));
         when(callsApiIOLMock.getDetailCotization("token","GGAL")).thenReturn(cotizacionDetalleMobile);
 
-        Response response = new Response();
-        response.setOk(true);
+        PurcheaseResponse response = new PurcheaseResponse();
+        response.setNumeroOperacion(432234);
         when(callsApiIOLMock.postSellAsset(any(),any(),any(),any())).thenReturn(response);
 
         BotMervalBusiness botMervalService = new BotMervalBusiness(callsApiIOLMock);
@@ -261,9 +262,9 @@ public class BotMervalServiceTest {
 
         when(callsApiIOLMock.getAccountStatus(any())).thenReturn(estadoCuenta);
 
-        Response response = new Response();
-        response.setOk(true);
-        when(callsApiIOLMock.postBuyAsset(any(),any(),any(),any())).thenReturn(response);
+        PurcheaseResponse purcheaseResponse = new PurcheaseResponse();
+        purcheaseResponse.setNumeroOperacion(3432);
+        when(callsApiIOLMock.postBuyAsset(any(),any(),any(),any())).thenReturn(purcheaseResponse);
 
         BotMervalBusiness botMervalService = new BotMervalBusiness(callsApiIOLMock);
 

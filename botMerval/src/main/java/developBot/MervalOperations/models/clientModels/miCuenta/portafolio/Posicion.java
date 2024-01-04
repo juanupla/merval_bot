@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Posicion {
-    private Integer cantidad;
+    private Double cantidad;
     private Double comprometido;
     private Double puntosVariacion;
     private Double variacionDiaria;

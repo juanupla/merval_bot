@@ -11,5 +11,5 @@ import java.util.List;
 @NoArgsConstructor
 public class Response {
     private boolean ok;
-    private List<DetalleMensaje> detalleMensajes;
+    private List<DetalleMensaje> messages;
 }
