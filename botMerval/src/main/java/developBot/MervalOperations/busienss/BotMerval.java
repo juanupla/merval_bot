@@ -62,15 +62,15 @@ public class BotMerval {
 
 
             //Activos operados por el bot:
-            String totalTickets = "AMZN,GOOGL,TSLA,GLOB,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,LOMA,BYMA,NVDA,YPFD,MSFT,PAMP,HAVA,AGRO,COME,PYPL,DISN,MELI,AAPL,BA.C,MCD,GOLD,PG,META,PBR,NKE,WMT,V,NFLX,VALE,CAT,BABA,BMA,SUPV,GGAL,ARKK";
+            String totalTickets = "AMZN,GOOGL,TSLA,GLOB,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,LOMA,BYMA,NVDA,YPFD,MSFT,PAMP,AGRO,COME,PYPL,DISN,MELI,AAPL,BA.C,MCD,GOLD,PG,META,PBR,NKE,WMT,V,NFLX,CAT,BABA,BMA,SUPV,GGAL,ARKK";
             //
             String[] elementos = totalTickets.split(",");
-            activosBot = Arrays.asList(elementos);
+            activosBot = Arrays.asList(elementos);//Recordá, esta lista es de SOLO LECTURA, por su consturcion
 
 
             StringBuilder print = new StringBuilder("Lista de activos considerados: ");
 
-            activosBot = botMervalService.removeOperationalTickets(token,"argentina",activosBot);
+            activosBot = botMervalService.removeOperationalTickets(token,"argentina",activosBot); //devuelve un nuevo ArrayList, se puede manipular
 
             if(activosBot != null){
                 boolean flag = false;
@@ -103,6 +103,7 @@ public class BotMerval {
                 for (Posicion p : ticketsEnCartera) {
                     List<BigDecimal> emas = botMervalService.calculoEMAs(token,p.getTitulo().getSimbolo().toUpperCase());
                     if (botMervalService.EMAsSaleOperation(emas)){
+                        //System.out.println("activo entrando en venta: "+p.getTitulo().getSimbolo());
                         boolean venta = botMervalService.saleOperation(token,emas,p);
                         if(venta){
                             System.out.println("se realizo la venta del activo: " +p.getTitulo().getSimbolo());
@@ -121,30 +122,42 @@ public class BotMerval {
 
             //bloque que recorre los activos actuales de la lista, sin los activos presentes en nuestra cartera y revisa posible compra
             if(activosBot != null){
-                for (int i = 0; i < activosBot.size();i++) {
+                for (int i = activosBot.size(); i > 0;) {
+
+                    int numeroAzar = (int) (Math.random() * activosBot.size());
+
                     System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
                     System.out.println("-------------------------------------------------------");
-                    System.out.println("Los resultado de las EMAs (3,9,21,50) del tiket "+activosBot.get(i)+" son: ");
-                    List<BigDecimal> list = botMervalService.calculoEMAs(token,activosBot.get(i).toUpperCase());
+                    System.out.println("Los resultado de las EMAs (3,9,21,50) del tiket "+activosBot.get(numeroAzar)+" son: ");
+
+
+
+
+                    List<BigDecimal> list = botMervalService.calculoEMAs(token,activosBot.get(numeroAzar).toUpperCase());
                     for (BigDecimal big: list) {
                         System.out.println(big.setScale(10, RoundingMode.HALF_UP));
                     }
-                    boolean puedeComprar = botMervalService.EMAsPurchaseOperation(token,activosBot.get(i).toUpperCase(),list);
+
+                    boolean puedeComprar = botMervalService.EMAsPurchaseOperation(token,activosBot.get(numeroAzar).toUpperCase(),list);
                     System.out.println("-------------------------------------------------------");
                     if(puedeComprar){
-                        botMervalService.purchaseOperation(token,activosBot.get(i).toUpperCase(),list);
+                        botMervalService.purchaseOperation(token,activosBot.get(numeroAzar).toUpperCase(),list);
+                        activosBot.remove(numeroAzar);
+                        i = activosBot.size();
                     }
                     else {
-                        System.out.println("el ticket "+ activosBot.get(i).toUpperCase() + " está fuera de rango estrategico y NO fue operado");
+                        System.out.println("el ticket "+ activosBot.get(numeroAzar).toUpperCase() + " está fuera de rango estrategico y NO fue operado");
+                        activosBot.remove(numeroAzar);
+                        i = activosBot.size();
                     }
 
                 }
             }
 
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
-            System.out.println("Sistema duerme 30 minutos en la fecha: " + LocalDateTime.now().toString());
+            System.out.println("Sistema duerme 45 minutos en la fecha: " + LocalDateTime.now().toString());
 
-            Thread.sleep(1800000);//duerme 30 minutos
+            Thread.sleep(2700000);//duerme 45 minutos
 
 
 

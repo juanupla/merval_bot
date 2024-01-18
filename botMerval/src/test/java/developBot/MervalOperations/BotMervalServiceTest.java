@@ -274,7 +274,7 @@ public class BotMervalServiceTest {
         lis.add(new BigDecimal("200"));//Este va a ser EMA9
         lis.add(new BigDecimal("150"));//Este va a ser EMA21
         lis.add(new BigDecimal("100"));//Este va a ser EMA50
-        //si cada ema es mayor a la que le sigue y el brecio es mayor a ema3 deberia ser true
+        //si cada ema es mayor a la que le sigue y el precio es mayor a ema3 deberia ser true
 
         boolean fin = botMervalService.purchaseOperation("token","ggal",lis);
 
@@ -353,7 +353,6 @@ public class BotMervalServiceTest {
         assertNotEquals("SATURDAY",antesAyerDia.name());
 
     }
-
 
     @Test
     public void getEMAsTest() {

@@ -107,7 +107,7 @@ public class CallsApiIOL {
         LocalDateTime validez = LocalDateTime.now().withHour(17);
         String tipoOrden = "precioLimite";
         String plazo = "t2";
-        Vender venta = new Vender("bCBA",simbolo.toUpperCase(),cantidadVenta,precioPuntaCompra,validez.toString(),tipoOrden,plazo,null);
+        Vender venta = new Vender("bCBA",simbolo.toUpperCase(),cantidadVenta,precioPuntaCompra,validez.toString(),tipoOrden,plazo,0);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);

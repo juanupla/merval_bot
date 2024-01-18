@@ -47,21 +47,6 @@ public class BotMervalBusiness {
                 }
                 List<String> fin = new ArrayList<>();
                 if(portafolio.getActivos().size() > 0){
-//                    for (Posicion activo: portafolio.getActivos()) {
-//                        boolean flag = false;
-//                        String ultimoTicket = "";
-//                        for(int i = 0; i<ticketsList.size();i++){
-//                            ultimoTicket = ticketsList.get(i);
-//                            if(ticketsList.get(i).equalsIgnoreCase(activo.getTitulo().getSimbolo())){
-//                                flag = true;
-//                                break;
-//                            }
-//                        }
-//                        if (!flag){
-//                            fin.add(ultimoTicket);
-//                        }
-//                    }
-//                    return fin;
                     for (String ticket:ticketsList) {
                         boolean flag = false;
                         for(int i = 0; i<portafolio.getActivos().size();i++) {
@@ -187,9 +172,13 @@ public class BotMervalBusiness {
                     intentos --;
                 }
             }
+            System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" NO se ha procesado adecuadamente y NO se realizo la VENTA. *Problemas con el servidor");
+            return false;
         }
-        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y NO se realizo la VENTA de este instrumento");
-        return false;
+        else {
+            System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y NO se realizo la VENTA de este instrumento");
+            return false;
+        }
     }
 
 
@@ -206,21 +195,31 @@ public class BotMervalBusiness {
                     //traigo el estado de cuenta
                     EstadoCuenta estadoCuenta = callsApiIOL.getAccountStatus(token);
 
-                    double valor5PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal()*0.05;
+                    double valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal()*0.06;
+
+                    if(cotizacion == null){
+                        System.out.println("Intento nro: "+(4-intentos)+ "con contizacion nula");
+                        break;
+                    }
 
                     //que al menos se púeda comprar 1
-                    if(cotizacion == null || valor5PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){
-                        System.out.println("el 5% de la cartera no es suficiente para operar alo menos 1 unidad del tiket: " +ticket);
+                    if(valor6PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){
+                        System.out.println("el 6% de la cartera no es suficiente para operar al menos 1 unidad del tiket: " +ticket);
                         return false;
                     }
 
-                    //los findos "disponibles" no poseen el 5% sobre el total de la cartera para operar este activo
-                    if(valor5PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){
-                        System.out.println("Los fondos 'Disponibles' no cubren el 5% del capital total para operar este activo: " +ticket);
-                        return false;
+                    //los fondos "disponibles" no poseen el 6% sobre el total de la cartera para operar este activo
+                    if(valor6PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){
+                        if(estadoCuenta.getCuentas().get(0).getDisponible()>cotizacion.getPuntas().get(0).getPrecioVenta()){//si los fondos disponibles son menor al 6% pero puedo comprar al menos una unidad del prodcuto (y evitar el cash. lo cual es necesario en escenarios de volatilidad en el par usd/ars)
+                            valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getDisponible();//valor6PorcientoCartera deja a un lado el valor real que el mismo nombre indica para tener un numero menor.. sera el restante de la cartera "no operable"
+                        }
+                        else {
+                            System.out.println("Los fondos 'Disponibles' no cubren el 6% del capital total para operar este activo: " +ticket+" ni la compra minima de 1 unidad");
+                            return false;
+                        }
                     }
 
-                    double operacion = valor5PorcientoCartera/cotizacion.getPuntas().get(0).getPrecioVenta();
+                    double operacion = valor6PorcientoCartera/cotizacion.getPuntas().get(0).getPrecioVenta();
 
                     //si puedo comprar 2,653 siempre redondeo hacia abajo
                     int operacionFinal = (int) Math.floor(operacion);
@@ -257,7 +256,7 @@ public class BotMervalBusiness {
                     return false;
                 } catch (HttpServerErrorException e) {
                     intentos--;
-                    Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
+                    Thread.sleep(1000); // Esperar 1 segundos antes de reintentar
                 }
             }
 
@@ -334,7 +333,7 @@ public class BotMervalBusiness {
         LocalDateTime fechaAntesDeAyer = LocalDateTime.now();
 
         //si ayer es feriado restar 1 dia, luego corroborar que no quede en fin de semana, si queda finde restar otro dia
-        while (isItFeriado(fechaAyer)){
+        while (isItFeriado(fechaAyer) || isItMondaySundayOrSaturday(fechaAyer).equals("SUNDAY")){
             fechaAyer = fechaAyer.minusDays(1);
             if (isItMondaySundayOrSaturday(fechaAyer).equals("SUNDAY")){
                 fechaAyer = fechaAyer.minusDays(2);
@@ -384,7 +383,7 @@ public class BotMervalBusiness {
                 fechaAyer = fechaConvertida;
                 cotizacionFechaAyer = cotizaciones.get(j);
             } else if (cotizaciones.get(j).getFechaHora().compareTo(fechaAntesDeAyer.withHour(10).toString())>0 &&
-                    cotizaciones.get(j).getFechaHora().compareTo(fechaAntesDeAyer.withHour(17).withMinute(10).toString())<0){
+                    cotizaciones.get(j).getFechaHora().compareTo(fechaAntesDeAyer.withHour(17).withMinute(50).toString())<0){
 
                 DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
                 LocalDateTime fechaConvertida = LocalDateTime.parse(cotizaciones.get(j).getFechaHora(), formatter);
