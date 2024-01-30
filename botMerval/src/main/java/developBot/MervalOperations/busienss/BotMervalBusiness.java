@@ -156,7 +156,8 @@ public class BotMervalBusiness {
 
                     if (respon != null && respon.getNumeroOperacion() != null && respon.getNumeroOperacion()>0){
                         System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y se realizo la VENTA de este instrumento"+"\n"+
-                                "El numero de operacion es: " + respon.getNumeroOperacion());
+                                "El numero de operacion es: " + respon.getNumeroOperacion() + "\n"+
+                                "La cantidad operada fue de: "+activo.getCantidad()+" unidades");
                         return true;
                     }
                     else {
@@ -195,7 +196,8 @@ public class BotMervalBusiness {
                     //traigo el estado de cuenta
                     EstadoCuenta estadoCuenta = callsApiIOL.getAccountStatus(token);
 
-                    double valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal()*0.06;
+                    double valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal();
+                    valor6PorcientoCartera = valor6PorcientoCartera*0.06;
 
                     if(cotizacion == null){
                         System.out.println("Intento nro: "+(4-intentos)+ "con contizacion nula");
@@ -209,16 +211,20 @@ public class BotMervalBusiness {
                     }
 
                     //los fondos "disponibles" no poseen el 6% sobre el total de la cartera para operar este activo
-                    if(valor6PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){
-                        if(estadoCuenta.getCuentas().get(0).getDisponible()>cotizacion.getPuntas().get(0).getPrecioVenta()){//si los fondos disponibles son menor al 6% pero puedo comprar al menos una unidad del prodcuto (y evitar el cash. lo cual es necesario en escenarios de volatilidad en el par usd/ars)
-                            valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getDisponible();//valor6PorcientoCartera deja a un lado el valor real que el mismo nombre indica para tener un numero menor.. sera el restante de la cartera "no operable"
+                    //----------------------------
+                    //if(valor6PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){
+                    if(valor6PorcientoCartera > estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar()){
+                        //if(estadoCuenta.getCuentas().get(0).getDisponible()>cotizacion.getPuntas().get(0).getPrecioVenta()){
+                        if(estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar()>cotizacion.getPuntas().get(0).getPrecioVenta()){//si los fondos disponibles son menor al 6% pero puedo comprar al menos una unidad del prodcuto (y evitar el cash. lo cual es necesario en escenarios de volatilidad en el par usd/ars)
+                            //valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getDisponible();
+                            valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar();//valor6PorcientoCartera deja a un lado el valor real que el mismo nombre indica para tener un numero menor.. sera el restante de la cartera "no operable"
                         }
                         else {
                             System.out.println("Los fondos 'Disponibles' no cubren el 6% del capital total para operar este activo: " +ticket+" ni la compra minima de 1 unidad");
                             return false;
                         }
                     }
-
+                    //----------------------------
                     double operacion = valor6PorcientoCartera/cotizacion.getPuntas().get(0).getPrecioVenta();
 
                     //si puedo comprar 2,653 siempre redondeo hacia abajo
@@ -256,7 +262,7 @@ public class BotMervalBusiness {
                     return false;
                 } catch (HttpServerErrorException e) {
                     intentos--;
-                    Thread.sleep(1000); // Esperar 1 segundos antes de reintentar
+                    //Thread.sleep(1000); // Esperar 1 segundos antes de reintentar
                 }
             }
 

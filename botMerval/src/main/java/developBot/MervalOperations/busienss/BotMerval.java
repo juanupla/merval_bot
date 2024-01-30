@@ -106,7 +106,6 @@ public class BotMerval {
                         //System.out.println("activo entrando en venta: "+p.getTitulo().getSimbolo());
                         boolean venta = botMervalService.saleOperation(token,emas,p);
                         if(venta){
-                            System.out.println("se realizo la venta del activo: " +p.getTitulo().getSimbolo());
                             System.out.println("-------------------------------------------------------");
                             flag = true;
                         }
@@ -118,7 +117,7 @@ public class BotMerval {
             }
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
 
-
+            System.out.println("Observacion de compra de activos: ");
 
             //bloque que recorre los activos actuales de la lista, sin los activos presentes en nuestra cartera y revisa posible compra
             if(activosBot != null){
