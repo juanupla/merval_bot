@@ -62,7 +62,7 @@ public class BotMerval {
 
 
             //Activos operados por el bot:
-            String totalTickets = "AMZN,GOOGL,TSLA,GLOB,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,LOMA,BYMA,NVDA,YPFD,MSFT,PAMP,AGRO,COME,PYPL,DISN,MELI,AAPL,BA.C,MCD,GOLD,PG,META,PBR,NKE,WMT,V,NFLX,CAT,BABA,BMA,SUPV,GGAL,ARKK";
+            String totalTickets = "AMZN,GOOGL,TSLA,GLOB,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,LOMA,BYMA,NVDA,YPFD,MSFT,PAMP,QCOM,COME,PYPL,DISN,MELI,AAPL,BA.C,MCD,GOLD,PG,META,PBR,NKE,WMT,V,NFLX,CAT,BABA,BMA,SUPV,GGAL,ALUA,ARKK";
             //
             String[] elementos = totalTickets.split(",");
             activosBot = Arrays.asList(elementos);//Recordá, esta lista es de SOLO LECTURA, por su consturcion
@@ -154,15 +154,15 @@ public class BotMerval {
             }
 
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
-            System.out.println("Sistema duerme 45 minutos en la fecha: " + LocalDateTime.now().toString());
+            System.out.println("Sistema duerme 15 minutos en la fecha: " + LocalDateTime.now().toString());
 
-            Thread.sleep(2700000);//duerme 45 minutos
+            Thread.sleep(900000);//duerme 15 minutos
 
 
 
         }while (!nombre.equals("SUNDAY") && !nombre.equals("SATURDAY") &&
                 now.isAfter(LocalDateTime.now().withHour(11).withMinute(0).withSecond(0))
-                && now.isBefore(LocalDateTime.now().withHour(17).withMinute(0).withSecond(0)));
+                && now.isBefore(LocalDateTime.now().withHour(16).withMinute(58).withSecond(0)));
 
     }
 }
