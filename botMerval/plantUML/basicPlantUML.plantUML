@@ -1,0 +1,70 @@
+@startuml
+class Persona {
+  + nombre: String
+  + edad: int
+  + hablar(): void
+}
+
+class Estudiante {
+  + matricula: String
+  + estudiar(): void
+}
+'/* herencia */
+Persona --|> Estudiante
+
+
+class A
+class B
+A -- B
+
+
+'/* agregacion */
+class A
+class B
+A --o B
+
+'/* implementacion */
+interface A
+class B
+A <|.. B
+
+
+
+'/* colores y estilos  */
+class AA {
+  + nombre: String
+}
+
+class BB {
+  + edad: int
+}
+AA -- BB : Relacion
+AA --o BB : Agregacion
+BB --* AA : Composicion
+
+skinparam class {
+  BackgroundColor White
+  BorderColor #AAAAAA
+  ArrowColor #00FF00
+}
+
+'/* interfaz  */'
+interface IOperacion {
+  + ejecutar(): void
+}
+
+class OperacionConcreta implements IOperacion {
+  + ejecutar(): void
+}
+
+class Cliente {
+  - operacion: IOperacion
+}
+
+Cliente --> IOperacion
+Cliente --> OperacionConcreta
+
+
+
+
+@enduml
