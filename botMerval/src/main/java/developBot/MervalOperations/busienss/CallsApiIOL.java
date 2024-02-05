@@ -47,15 +47,13 @@ public class CallsApiIOL {
         return portafolio;
     }
     public Operacion[] getOperaciones(String token){
-        String url = "https://api.invertironline.com/api/v2/operaciones";
+        String url = "https://api.invertironline.com/api/v2/operaciones?estado=pendientes";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("estado", "pendientes");
 
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<Operacion[]> response = restTemplate.exchange(
                 url,
@@ -70,13 +68,13 @@ public class CallsApiIOL {
     }
 
     public Response deletePendingOrders(String token, Integer numeroOperacion){
-        String operacionUrl = "https://api.invertironline.com/api/v2/operaciones/" + numeroOperacion;
+        String operacionUrl = "https://api.invertironline.com/api/v2/operaciones/" + numeroOperacion.toString();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
         ResponseEntity<Response> operacionResponse = restTemplate.exchange(
                 operacionUrl,
-                HttpMethod.GET,
+                HttpMethod.DELETE,
                 entity,
                 Response.class
         );
