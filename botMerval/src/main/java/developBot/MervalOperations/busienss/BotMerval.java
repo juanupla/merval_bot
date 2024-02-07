@@ -158,11 +158,9 @@ public class BotMerval {
 
             Thread.sleep(900000);//duerme 15 minutos
 
-
-
         }while (!nombre.equals("SUNDAY") && !nombre.equals("SATURDAY") &&
-                now.isAfter(LocalDateTime.now().withHour(11).withMinute(0).withSecond(0))
-                && now.isBefore(LocalDateTime.now().withHour(16).withMinute(58).withSecond(0)));
+                LocalDateTime.now().isAfter(LocalDateTime.now().withHour(11).withMinute(0).withSecond(0))
+                && LocalDateTime.now().isBefore(LocalDateTime.now().withHour(16).withMinute(58).withSecond(0)));
 
     }
 }
