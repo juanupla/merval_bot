@@ -4,6 +4,7 @@ package developBot.MervalOperations;
 import developBot.MervalOperations.busienss.CallsApiIOL;
 import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.Cuenta;
 import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.EstadoCuenta;
+import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.Saldo;
 import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Portafolio;
 import developBot.MervalOperations.models.clientModels.miCuenta.portafolio.Posicion;
@@ -257,6 +258,13 @@ public class BotMervalServiceTest {
         Cuenta cuenta = new Cuenta();
         cuenta.setTotal(100000.0);
         cuenta.setDisponible(78500.0);
+        //---
+        Saldo saldo0 = new Saldo();
+        Saldo saldo1 = new Saldo();
+        Saldo saldo2 = new Saldo();
+        saldo2.setDisponibleOperar(78500.0);
+        cuenta.setSaldos(Arrays.asList(saldo0,saldo1,saldo2));
+        //---
         //en el codigo siempre pide la cuenta.get(0) por eso solo agrego una.
         estadoCuenta.setCuentas(List.of(cuenta));
 
