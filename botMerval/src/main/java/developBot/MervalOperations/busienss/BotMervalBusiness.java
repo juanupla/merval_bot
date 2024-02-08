@@ -33,7 +33,7 @@ public class BotMervalBusiness {
 
 
     //001 Este método elimina aquellos activos presente en la cartera de la lista inicial a recorrer ya que
-    //por cada activo se abriran posiciones del 5% del capital, sin ajuste.
+    //por cada activo se abriran posiciones del 6% del capital, sin ajuste.
     //así solo se podran procesar aquellos activos que no se encuentren en cartera.
     public List<String> removeOperationalTickets(String token, String pais ,List<String> ticketsList) throws InterruptedException {
         int intentos = 3;
