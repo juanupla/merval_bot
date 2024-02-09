@@ -24,7 +24,7 @@ import java.util.*;
 
 public class BotMervalBusiness {
 
-    private final CallsApiIOL callsApiIOL; // No inicializar aquí, sino a través del constructor
+    private final CallsApiIOL callsApiIOL; // inicializa a través del constructor
 
     public BotMervalBusiness(CallsApiIOL callsApiIOL) {
 
@@ -150,13 +150,12 @@ public class BotMervalBusiness {
 
                     //------------------------
                     //Si las EMAs estan dando venta pero el precio esta por encima de las emas mas cortas, no las vende. => considerando un posible rebote del mercado
-                    if(emas.get(0).compareTo(new BigDecimal(cotizacion.getUltimoPrecio()))<0
-                    && emas.get(1).compareTo(new BigDecimal(cotizacion.getUltimoPrecio()))<0){
-                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente. Indica venta pero el precio esta por encima de las EMAs 3 y 9 -> posible rebote");
+                    if(emas.get(1).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0
+                    && emas.get(2).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0){
+                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente. Indica venta pero el precio esta por encima de las EMAs 9 y 21 -> posible rebote");
                         return false;
                     }
                     //-----------------------
-
 
                     //-------------Venta---------------
 
@@ -207,8 +206,8 @@ public class BotMervalBusiness {
                     //traigo el estado de cuenta
                     EstadoCuenta estadoCuenta = callsApiIOL.getAccountStatus(token);
 
-                    double valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal();
-                    valor6PorcientoCartera = valor6PorcientoCartera*0.06;
+                    double valor7dot5PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal();
+                    valor7dot5PorcientoCartera = valor7dot5PorcientoCartera*0.075;
 
                     if(cotizacion == null){
                         System.out.println("Intento nro: "+(4-intentos)+ "con contizacion nula");
@@ -216,27 +215,24 @@ public class BotMervalBusiness {
                     }
 
                     //que al menos se púeda comprar 1
-                    if(valor6PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){
-                        System.out.println("el 6% de la cartera no es suficiente para operar al menos 1 unidad del tiket: " +ticket);
+                    if(valor7dot5PorcientoCartera < cotizacion.getPuntas().get(0).getPrecioVenta()){
+                        System.out.println("el 7,5% de la cartera no es suficiente para operar al menos 1 unidad del tiket: " +ticket);
                         return false;
                     }
 
-                    //los fondos "disponibles" no poseen el 6% sobre el total de la cartera para operar este activo
+                    //los fondos "disponibles" no poseen el 7,5% sobre el total de la cartera para operar este activo
                     //----------------------------
-                    //if(valor6PorcientoCartera > estadoCuenta.getCuentas().get(0).getDisponible()){
-                    if(valor6PorcientoCartera > estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar()){
-                        //if(estadoCuenta.getCuentas().get(0).getDisponible()>cotizacion.getPuntas().get(0).getPrecioVenta()){
-                        if(estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar()>cotizacion.getPuntas().get(0).getPrecioVenta()){//si los fondos disponibles son menor al 6% pero puedo comprar al menos una unidad del prodcuto (y evitar el cash. lo cual es necesario en escenarios de volatilidad en el par usd/ars)
-                            //valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getDisponible();
-                            valor6PorcientoCartera = estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar();//valor6PorcientoCartera deja a un lado el valor real que el mismo nombre indica para tener un numero menor.. sera el restante de la cartera "no operable"
+                    if(valor7dot5PorcientoCartera > estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar()){
+                        if(estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar()>cotizacion.getPuntas().get(0).getPrecioVenta()){//si los fondos disponibles son menor al 7,5% pero puedo comprar al menos una unidad del prodcuto (y evitar el cash. lo cual es necesario en escenarios de volatilidad en el par usd/ars)
+                            valor7dot5PorcientoCartera = estadoCuenta.getCuentas().get(0).getSaldos().get(2).getDisponibleOperar();//valor7dot5PorcientoCartera deja a un lado el valor real que el mismo nombre indica para tener un numero menor.. sera el restante de la cartera "no operable"
                         }
                         else {
-                            System.out.println("Los fondos 'Disponibles' no cubren el 6% del capital total para operar este activo: " +ticket+" ni la compra minima de 1 unidad");
+                            System.out.println("Los fondos 'Disponibles' no cubren el 7,5% del capital total para operar este activo: " +ticket+" ni la compra minima de 1 unidad");
                             return false;
                         }
                     }
                     //----------------------------
-                    double operacion = valor6PorcientoCartera/cotizacion.getPuntas().get(0).getPrecioVenta();
+                    double operacion = valor7dot5PorcientoCartera/cotizacion.getPuntas().get(0).getPrecioVenta();
 
                     //si puedo comprar 2,653 siempre redondeo hacia abajo
                     int operacionFinal = (int) Math.floor(operacion);
@@ -273,7 +269,6 @@ public class BotMervalBusiness {
                     return false;
                 } catch (HttpServerErrorException e) {
                     intentos--;
-                    //Thread.sleep(1000); // Esperar 1 segundos antes de reintentar
                 }
             }
 
@@ -298,15 +293,14 @@ public class BotMervalBusiness {
                 if (cotizacion == null){
                     return false;
                 }
-
+                //si precio > ema9 y ema9>ema21 y ema21>ema50 compra!
                 BigDecimal bigDecimalValue = BigDecimal.valueOf(cotizacion.getUltimoPrecio());
-                if(bigDecimalValue.compareTo(ema3)>0 && ema3.compareTo(ema9)>0 && ema9.compareTo(ema21)>0 && ema21.compareTo(ema50)>0){
+                if(bigDecimalValue.compareTo(ema9)>0 && ema9.compareTo(ema21)>0 && ema21.compareTo(ema50)>0){
                     return true;
                 }
                 return false;
             } catch (HttpServerErrorException e) {
                 intentos--;
-                Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
             }
         }
         return false;
@@ -317,8 +311,9 @@ public class BotMervalBusiness {
     public boolean EMAsSaleOperation(List<BigDecimal> emas){
         BigDecimal ema3 = emas.get(0);
         BigDecimal ema9 = emas.get(1);
+        BigDecimal ema21 = emas.get(2);
 
-        if(ema3.compareTo(ema9)<0){
+        if(ema9.compareTo(ema21)<0 || ema3.compareTo(ema21)<0){
             return true;
         }
         return false;
