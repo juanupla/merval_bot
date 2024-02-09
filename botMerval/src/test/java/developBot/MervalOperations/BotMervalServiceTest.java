@@ -135,10 +135,11 @@ public class BotMervalServiceTest {
     public void EMAsSaleOperationTest(){
         BotMervalBusiness botMervalService = new BotMervalBusiness(callsApiIOLMock);
 
-        BigDecimal ema1 = new BigDecimal("100");
-        BigDecimal ema2 = new BigDecimal("200");
-
-        Assertions.assertTrue(botMervalService.EMAsSaleOperation(Arrays.asList(ema1,ema2)));
+        BigDecimal ema3 = new BigDecimal("100");
+        BigDecimal ema9 = new BigDecimal("200");
+        BigDecimal ema21 = new BigDecimal("300");
+        //si ema3 o ema9 es menor a ema21 = true
+        Assertions.assertTrue(botMervalService.EMAsSaleOperation(Arrays.asList(ema3,ema9,ema21)));
     }
     @Test
     public void EMAsPurchaseOperationTest() throws InterruptedException {
@@ -157,8 +158,8 @@ public class BotMervalServiceTest {
 
         Assertions.assertTrue(fin);
 
-        //las emas no quedarian cruzadas para dar compra y el resultado deberia ser falso
-        ema3 = new BigDecimal("1100");
+        //las emas no quedarian cruzadas para dar compra(ema9>ema21>ema50) y el resultado deberia ser falso
+        ema9 = new BigDecimal("1100");
         fin = botMervalService.EMAsPurchaseOperation("token","ggal",Arrays.asList(ema3,ema9,ema21,ema50));
 
         Assertions.assertFalse(fin);
@@ -213,11 +214,13 @@ public class BotMervalServiceTest {
         assertEquals(Arrays.asList(punta,punta2).get(0).getPrecioCompra(),150.0);
 
         cotizacionDetalleMobile.setPuntas(Arrays.asList(punta,punta2));
+        cotizacionDetalleMobile.setUltimoPrecio(146.0);//si el ultimo precio esta arriba de ema9 y ema21 la venta se anula o da false. Aca la dejamos debajo de ema21 y arriba de ema9
         when(callsApiIOLMock.getDetailCotization("token","GGAL")).thenReturn(cotizacionDetalleMobile);
 
         PurcheaseResponse response = new PurcheaseResponse();
         response.setNumeroOperacion(432234);
         when(callsApiIOLMock.postSellAsset(any(),any(),any(),any())).thenReturn(response);
+
 
         BotMervalBusiness botMervalService = new BotMervalBusiness(callsApiIOLMock);
 
@@ -225,6 +228,7 @@ public class BotMervalServiceTest {
         //siguiendo la logica del metodo:
         lis.add(new BigDecimal("100"));//Este va a ser EMA3
         lis.add(new BigDecimal("150"));//Este va a ser EMA9
+        lis.add(new BigDecimal("145"));//Este va a ser EMA21
         //si EMA3 es menor a EMA9 entonces vende
 
         Titulo t = new Titulo();
@@ -244,7 +248,7 @@ public class BotMervalServiceTest {
         Punta punta2 = new Punta();
         punta2.setPrecioVenta(350.0);
         punta.setPrecioVenta(300.0);
-        punta.setCantidadVenta(20.0);
+        punta.setCantidadVenta(50.0);
         punta2.setCantidadVenta(20.0);
 
         //Las puntas que vienen de api siempre menor a mayor. es decir que en la list.get(0) esta la mas competitiva del momento
