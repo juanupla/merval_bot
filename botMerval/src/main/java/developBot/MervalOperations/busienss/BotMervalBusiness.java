@@ -152,7 +152,9 @@ public class BotMervalBusiness {
                     //Si las EMAs estan dando venta pero el precio esta por encima de las emas mas cortas, no las vende. => considerando un posible rebote del mercado
                     if(emas.get(1).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0
                     && emas.get(2).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0){
-                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente. Indica venta pero el precio esta por encima de las EMAs 9 y 21 -> posible rebote");
+                        System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente. Indica venta pero " +
+                                "el precio esta por encima de las EMAs 9 y 21 -> posible rebote" +"\n"+
+                                "-------------------------------------------------------");
                         return false;
                     }
                     //-----------------------
