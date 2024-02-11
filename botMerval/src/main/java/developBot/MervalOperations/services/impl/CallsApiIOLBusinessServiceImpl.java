@@ -1,4 +1,4 @@
-package developBot.MervalOperations.busienss;
+package developBot.MervalOperations.services.impl;
 
 import developBot.MervalOperations.models.clientModel.miCuenta.estadoCuenta.EstadoCuenta;
 import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
@@ -9,10 +9,12 @@ import developBot.MervalOperations.models.clientModel.operar.Vender;
 import developBot.MervalOperations.models.clientModel.responseModel.Response;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import developBot.MervalOperations.services.CallsApiIOLBusinessService;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,28 +24,36 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
-@Data
-@AllArgsConstructor
-public class CallsApiIOL {
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ModelMapper modelMapper = new ModelMapper();
-    //---------------------------------------------------
-    //-------- llamadas a la API
-    public Portafolio getPortafolioByPais(String token, String pais){
+@Service
+public class CallsApiIOLBusinessServiceImpl implements CallsApiIOLBusinessService {
+    @Autowired
+    private RestTemplate restTemplate;
+    @Override
+    public Portafolio getPortafolioByPais(String token, String pais) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-//        Map<String, String> urlParams = new HashMap<>();
-//        urlParams.put("pais", pais);
-
         ResponseEntity<Portafolio> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/portafolio/"+pais,
                 HttpMethod.GET,entity, Portafolio.class);
 
-        Portafolio portafolio = portafolioResponseEntity.getBody();
-        return portafolio;
+        try {
+            Portafolio portafolio = portafolioResponseEntity.getBody();
+            if(portafolio!= null){
+                return portafolio;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
+
+
     }
-    public Operacion[] getOperaciones(String token){
+
+    @Override
+    public Operacion[] getOperaciones(String token) {
         String url = "https://api.invertironline.com/api/v2/operaciones?estado=pendientes";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
@@ -59,12 +69,22 @@ public class CallsApiIOL {
                 Operacion[].class
         );
 
-        Operacion[] operaciones = response.getBody();
 
-        return operaciones;
+        try {
+            Operacion[] operaciones = response.getBody();
+            if(operaciones!= null){
+                return operaciones;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
     }
 
-    public Response deletePendingOrders(String token, Integer numeroOperacion){
+    @Override
+    public Response deletePendingOrders(String token, Integer numeroOperacion) {
         String operacionUrl = "https://api.invertironline.com/api/v2/operaciones/" + numeroOperacion.toString();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
@@ -75,10 +95,22 @@ public class CallsApiIOL {
                 entity,
                 Response.class
         );
-        Response resp = operacionResponse.getBody();
-        return resp;
+
+        try {
+            Response resp = operacionResponse.getBody();
+            if(resp!= null){
+                return resp;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
     }
-    public CotizacionDetalleMobile getDetailCotization(String token, String simbolo){
+
+    @Override
+    public CotizacionDetalleMobile getDetailCotization(String token, String simbolo) {
         String path1 = "https://api.invertironline.com/api/v2/bCBA/Titulos/"+simbolo.toUpperCase()+"/CotizacionDetalleMobile/t2";
 
         HttpHeaders headers1 = new HttpHeaders();
@@ -92,11 +124,22 @@ public class CallsApiIOL {
                 entity1,
                 CotizacionDetalleMobile.class
         );
-        CotizacionDetalleMobile cotizacion = response.getBody(); //traigo la ultima cotizacion del instrumento
-        return cotizacion;
+
+        try {
+            CotizacionDetalleMobile cotizacion = response.getBody(); //traigo la ultima cotizacion del instrumento
+            if(cotizacion!= null){
+                return cotizacion;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
     }
 
-    public PurcheaseResponse postSellAsset(String token, String simbolo, Double cantidadVenta, Double precioPuntaCompra){
+    @Override
+    public PurcheaseResponse postSellAsset(String token, String simbolo, Double cantidadVenta, Double precioPuntaCompra) {
         String path = "https://api.invertironline.com/api/v2/operar/Vender";
 
         LocalDateTime validez = LocalDateTime.now().withHour(17);
@@ -112,10 +155,21 @@ public class CallsApiIOL {
 
         ResponseEntity<PurcheaseResponse> resp = restTemplate.exchange(path,HttpMethod.POST,entity,PurcheaseResponse.class);
 
-        PurcheaseResponse respon = resp.getBody();
-        return respon;
+
+        try {
+            PurcheaseResponse respon = resp.getBody();
+            if(respon!= null){
+                return respon;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
     }
 
+    @Override
     public EstadoCuenta getAccountStatus(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
@@ -125,12 +179,21 @@ public class CallsApiIOL {
         ResponseEntity<EstadoCuenta> portafolioResponseEntity = restTemplate.exchange("https://api.invertironline.com/api/v2/estadocuenta",
                 HttpMethod.GET, entity, EstadoCuenta.class);
 
-        EstadoCuenta estadoCuenta = portafolioResponseEntity.getBody();
-
-        return estadoCuenta;
+        try {
+            EstadoCuenta estadoCuenta = portafolioResponseEntity.getBody();
+            if(estadoCuenta!= null){
+                return estadoCuenta;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
     }
 
-    public PurcheaseResponse postBuyAsset(String token, String simbolo, Integer cantidad, Double precioPuntaVenta){
+    @Override
+    public PurcheaseResponse postBuyAsset(String token, String simbolo, Integer cantidad, Double precioPuntaVenta) {
         Comprar compra = new Comprar();
         compra.setMercado("bCBA");
         compra.setSimbolo(simbolo);
@@ -161,12 +224,21 @@ public class CallsApiIOL {
                 requestEntity,
                 PurcheaseResponse.class);
 
-        PurcheaseResponse response = responseEntity.getBody();
-
-        return response;
+        try {
+            PurcheaseResponse response = responseEntity.getBody();
+            if(response!= null){
+                return response;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
     }
 
-    public List<Cotizacion> getCotizaciones(String token, String simbolo) throws InterruptedException {
+    @Override
+    public List<Cotizacion> getCotizaciones(String token, String simbolo){
         int intentos = 3;
         while (intentos > 0) {
             try {
@@ -203,10 +275,9 @@ public class CallsApiIOL {
                 return Arrays.asList(cotizaciones);
             } catch (HttpServerErrorException e) {
                 intentos--;
-                Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
             }
         }
 
-        return null;
+        throw new ErrorResponseException(HttpStatusCode.valueOf(500));
     }
 }

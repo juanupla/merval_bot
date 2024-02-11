@@ -1,10 +1,10 @@
 package developBot.MervalOperations.feignClients;
 
-import developBot.MervalOperations.models.clientModels.responseModel.Response;
-import developBot.MervalOperations.models.clientModels.operar.Comprar;
-import developBot.MervalOperations.models.clientModels.operar.ComprarEspecieD;
-import developBot.MervalOperations.models.clientModels.operar.Vender;
-import developBot.MervalOperations.models.clientModels.operar.VenderEspecieD;
+import developBot.MervalOperations.models.clientModel.responseModel.Response;
+import developBot.MervalOperations.models.clientModel.operar.Comprar;
+import developBot.MervalOperations.models.clientModel.operar.ComprarEspecieD;
+import developBot.MervalOperations.models.clientModel.operar.Vender;
+import developBot.MervalOperations.models.clientModel.operar.VenderEspecieD;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

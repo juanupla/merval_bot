@@ -1,9 +1,9 @@
 package developBot.MervalOperations.feignClients;
 
-import developBot.MervalOperations.models.clientModels.responseModel.Response;
-import developBot.MervalOperations.models.clientModels.miCuenta.estadoCuenta.EstadoCuenta;
-import developBot.MervalOperations.models.clientModels.miCuenta.operacioneByNumero.OperacionDetalleModel;
-import developBot.MervalOperations.models.clientModels.miCuenta.operaciones.Operacion;
+import developBot.MervalOperations.models.clientModel.responseModel.Response;
+import developBot.MervalOperations.models.clientModel.miCuenta.estadoCuenta.EstadoCuenta;
+import developBot.MervalOperations.models.clientModel.miCuenta.operacioneByNumero.OperacionDetalleModel;
+import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 

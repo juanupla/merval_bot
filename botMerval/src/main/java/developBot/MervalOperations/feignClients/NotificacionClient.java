@@ -1,6 +1,6 @@
 package developBot.MervalOperations.feignClients;
 
-import developBot.MervalOperations.models.clientModels.notificacion.Notificacion;
+import developBot.MervalOperations.models.clientModel.notificacion.Notificacion;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;

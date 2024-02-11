@@ -1,4 +1,4 @@
-package developBot.MervalOperations.busienss;
+package developBot.MervalOperations.services.impl;
 
 import developBot.MervalOperations.models.clientModel.miCuenta.estadoCuenta.EstadoCuenta;
 import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
@@ -8,10 +8,15 @@ import developBot.MervalOperations.models.clientModel.operar.PurcheaseResponse;
 import developBot.MervalOperations.models.clientModel.responseModel.Response;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-import org.springframework.http.*;
+import developBot.MervalOperations.services.BotMervalBusienssService;
+import developBot.MervalOperations.services.CallsApiIOLBusinessService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.stereotype.Service;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.server.ResponseStatusException;
-
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,27 +25,30 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-public class BotMervalBusiness {
+@Service
+public class BotMervalBusinessServiceImpl implements BotMervalBusienssService {
+    @Autowired
+    private CallsApiIOLBusinessService callsApiIOLBusinessService;
 
-    private final CallsApiIOL callsApiIOL; // inicializa a través del constructor
 
-    public BotMervalBusiness(CallsApiIOL callsApiIOL) {
 
-        this.callsApiIOL = callsApiIOL;
-    }
 
 
     //001 Este método elimina aquellos activos presente en la cartera de la lista inicial a recorrer ya que
     //por cada activo se abriran posiciones del 6% del capital, sin ajuste.
     //así solo se podran procesar aquellos activos que no se encuentren en cartera.
-    public List<String> removeOperationalTickets(String token, String pais ,List<String> ticketsList) throws InterruptedException {
+    @Override
+    public List<String> removeOperationalTickets(String token, String pais, List<String> ticketsList) {
         int intentos = 3;
         while (intentos > 0) {
             try {
 
-                Portafolio portafolio = callsApiIOL.getPortafolioByPais(token,pais);
+                Portafolio portafolio = callsApiIOLBusinessService.getPortafolioByPais(token,pais);
 
                 if(portafolio == null){
                     break;
@@ -51,8 +59,8 @@ public class BotMervalBusiness {
                         boolean flag = false;
                         for(int i = 0; i<portafolio.getActivos().size();i++) {
                             if(ticket.equalsIgnoreCase(portafolio.getActivos().get(i).getTitulo().getSimbolo())){
-                               flag = true;
-                               break;
+                                flag = true;
+                                break;
                             }
                         }
                         if (!flag){
@@ -63,25 +71,21 @@ public class BotMervalBusiness {
                 }
                 return ticketsList;
             } catch (HttpServerErrorException e) {
-                // Manejo de errores específicos de servidor
                 // Por ejemplo, registrar el error y reducir el contador de intentos
                 intentos--;
-                // Esperar antes de volver a intentar (puedes ajustar el tiempo según tus necesidades)
-                Thread.sleep(1500); // Esperar 1.3 segundos antes de reintentar
             }
         }
-        return null;
-
+        throw new ErrorResponseException(HttpStatusCode.valueOf(500));
     }
 
-
     //Este metodo obtiene aquellos posiciones que ESTAN en cartera, se arma y envia una lista de los mismos.
-    public List<Posicion> operationalTickets(String token,String pais) {
+    @Override
+    public List<Posicion> operationalTickets(String token, String pais) {
         int intentos = 3;
         while (intentos > 0) {
             try {
 
-                Portafolio portafolio = callsApiIOL.getPortafolioByPais(token,pais);
+                Portafolio portafolio = callsApiIOLBusinessService.getPortafolioByPais(token,pais);
 
                 if (portafolio != null){
                     return new ArrayList<>(portafolio.getActivos());
@@ -90,15 +94,14 @@ public class BotMervalBusiness {
                 intentos--;
             }
         }
-        return null;
+        throw new ErrorResponseException(HttpStatusCode.valueOf(500));
     }
-
 
     //002 Este método eliminará aquellas ordenes que queden en estado pendiente,
     //se haya hecho una ejecucion parcial o no, se eliminaran con esta función.
+    @Override
     public List<Operacion> removePendingOrders(String token) {
-
-        Operacion[] operaciones = callsApiIOL.getOperaciones(token);
+        Operacion[] operaciones = callsApiIOLBusinessService.getOperaciones(token);
 
         if (operaciones.length > 0) {
             int intentos = 3;
@@ -110,7 +113,7 @@ public class BotMervalBusiness {
 
                     for (Operacion operacion : operacionesList) {
 
-                        Response resp = callsApiIOL.deletePendingOrders(token,operacion.getNumero());
+                        Response resp = callsApiIOLBusinessService.deletePendingOrders(token,operacion.getNumero());
 
                         if (resp != null && resp.isOk()) {
                             operacionesProcesadas.add(operacion);
@@ -122,17 +125,16 @@ public class BotMervalBusiness {
                     intentos--;
                 }
             }
-
+            throw new ErrorResponseException(HttpStatusCode.valueOf(500));
 
         } else {
             return Collections.emptyList();
         }
-        return Collections.emptyList();
     }
 
-
     //Metodo para ejecutar la venta de un activo
-    public boolean saleOperation(String token, List<BigDecimal> emas,Posicion activo){
+    @Override
+    public boolean saleOperation(String token, List<BigDecimal> emas, Posicion activo) {
         if (EMAsSaleOperation(emas)){
             int intentos = 3;
             while (intentos>0){
@@ -140,7 +142,7 @@ public class BotMervalBusiness {
                     //voy a necesitar consultar el activo para saber
                     // cuales son las puntas para realizar la venta
 
-                    CotizacionDetalleMobile cotizacion = callsApiIOL.getDetailCotization(token,activo.getTitulo().getSimbolo().toUpperCase());
+                    CotizacionDetalleMobile cotizacion = callsApiIOLBusinessService.getDetailCotization(token,activo.getTitulo().getSimbolo().toUpperCase());
 
                     if(cotizacion == null){
                         System.out.println("El activo: " +activo.getTitulo().getSimbolo().toUpperCase()+" devolvio null al consultar getDetailCotization()");
@@ -151,7 +153,7 @@ public class BotMervalBusiness {
                     //------------------------
                     //Si las EMAs estan dando venta pero el precio esta por encima de las emas mas cortas, no las vende. => considerando un posible rebote del mercado
                     if(emas.get(1).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0
-                    && emas.get(2).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0){
+                            && emas.get(2).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0){
                         System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente. Indica venta pero " +
                                 "el precio esta por encima de las EMAs 9 y 21 -> posible rebote" +"\n"+
                                 "-------------------------------------------------------");
@@ -164,7 +166,7 @@ public class BotMervalBusiness {
                     Double cantidad = activo.getCantidad();
                     Double precioPuntaCompra = cotizacion.getPuntas().get(0).getPrecioCompra(); //precio obtenido en operaciones anteriores(segun precio obtenido de las puntas - CotizacionDetalleMobile- )
 
-                    PurcheaseResponse respon = callsApiIOL.postSellAsset(token,activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precioPuntaCompra);
+                    PurcheaseResponse respon = callsApiIOLBusinessService.postSellAsset(token,activo.getTitulo().getSimbolo().toUpperCase(),cantidad,precioPuntaCompra);
 
                     if (respon != null && respon.getNumeroOperacion() != null && respon.getNumeroOperacion()>0){
                         System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente y se realizo la VENTA de este instrumento"+"\n"+
@@ -176,7 +178,7 @@ public class BotMervalBusiness {
                         System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" NO se ha procesado adecuadamente y NO realizo la VENTA de este instrumento");
                         if (respon!= null && respon.getTitle() != null && respon.getDescription()!= null){
                             System.out.println("Title: " + respon.getTitle()+"\n"+
-                            "Description: " + respon.getDescription());
+                                    "Description: " + respon.getDescription());
                         }
                         return false;
                     }
@@ -194,19 +196,19 @@ public class BotMervalBusiness {
         }
     }
 
-
     //Metodo para ejecutar la compra de un activo
     //podra no operar incluso si las condiciones de EMAsPurchaseOperation estan dadas por cuestiones de capital
-    public boolean purchaseOperation(String token, String ticket, List<BigDecimal> emas) throws InterruptedException {
+    @Override
+    public boolean purchaseOperation(String token, String ticket, List<BigDecimal> emas) {
         if (EMAsPurchaseOperation(token,ticket,emas)){
             int intentos = 3;
             while (intentos > 0) {
                 try {
                     //traigo la ultima cotizacion del instrumento
-                    CotizacionDetalleMobile cotizacion = callsApiIOL.getDetailCotization(token,ticket.toUpperCase());
+                    CotizacionDetalleMobile cotizacion = callsApiIOLBusinessService.getDetailCotization(token,ticket.toUpperCase());
 
                     //traigo el estado de cuenta
-                    EstadoCuenta estadoCuenta = callsApiIOL.getAccountStatus(token);
+                    EstadoCuenta estadoCuenta = callsApiIOLBusinessService.getAccountStatus(token);
 
                     double valor7dot5PorcientoCartera = estadoCuenta.getCuentas().get(0).getTotal();
                     valor7dot5PorcientoCartera = valor7dot5PorcientoCartera*0.075;
@@ -243,7 +245,7 @@ public class BotMervalBusiness {
                         //que la cantidad en la punta de venta sea igual o mayor a la cantidad de mi intencion de compra
                         if(cotizacion.getPuntas().get(0).getCantidadVenta() >= operacionFinal){
 
-                            PurcheaseResponse response1 = callsApiIOL.postBuyAsset(token,ticket,operacionFinal,cotizacion.getPuntas().get(0).getPrecioVenta());
+                            PurcheaseResponse response1 = callsApiIOLBusinessService.postBuyAsset(token,ticket,operacionFinal,cotizacion.getPuntas().get(0).getPrecioVenta());
 
 
                             if (response1 != null && response1.getNumeroOperacion() != null && response1.getNumeroOperacion()>0){
@@ -279,9 +281,9 @@ public class BotMervalBusiness {
         return false;
     }
 
-
     //Metodo para verificar si las disposicion de emas dan compra - Se utiliza en purchaseOperation()
-    public boolean EMAsPurchaseOperation(String token, String ticket, List<BigDecimal> emas) throws InterruptedException {
+    @Override
+    public boolean EMAsPurchaseOperation(String token, String ticket, List<BigDecimal> emas) {
         int intentos = 3;
         while (intentos > 0) {
             try {
@@ -290,7 +292,7 @@ public class BotMervalBusiness {
                 BigDecimal ema21 = emas.get(2);
                 BigDecimal ema50 = emas.get(3);
 
-                CotizacionDetalleMobile cotizacion = callsApiIOL.getDetailCotization(token,ticket.toUpperCase());
+                CotizacionDetalleMobile cotizacion = callsApiIOLBusinessService.getDetailCotization(token,ticket.toUpperCase());
 
                 if (cotizacion == null){
                     return false;
@@ -308,9 +310,9 @@ public class BotMervalBusiness {
         return false;
     }
 
-
     //Metodo para verificar si las disposicion de emas dan venta - Se utiliza en saleOperation()
-    public boolean EMAsSaleOperation(List<BigDecimal> emas){
+    @Override
+    public boolean EMAsSaleOperation(List<BigDecimal> emas) {
         BigDecimal ema3 = emas.get(0);
         BigDecimal ema9 = emas.get(1);
         BigDecimal ema21 = emas.get(2);
@@ -321,24 +323,31 @@ public class BotMervalBusiness {
         return false;
     }
 
-
     //003 este método será interno y se encargara de calcular las EMAs solicitadas y se devuelven en
     // una lista que contiene 4 BidDecimal que corresponde a cada EMA
-    public List<BigDecimal> calculoEMAs(String token, String simbolo) throws InterruptedException {
+    @Override
+    public List<BigDecimal> calculoEMAs(String token, String simbolo) {
+        int intentos = 3;
+        while (intentos>0) {
+            try {
+                List<Cotizacion> cotizaciones = callsApiIOLBusinessService.getCotizaciones(token, simbolo);
 
-        List<Cotizacion> cotizaciones = callsApiIOL.getCotizaciones(token, simbolo);
+                List<BigDecimal> emas = getEMAs(cotizaciones);
 
-        List<BigDecimal> emas = getEMAs(cotizaciones);
-
-        return emas;
+                return emas;
+            } catch (Error e) {
+                intentos--;
+            }
+        }
+        throw new ErrorResponseException(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 
     //Este metodo se utiliza para normalizar las cotizaciones recibidas y
     //objtener desde el dia anterior(habil) al actual las cotizaciones al cierre de cada dia
     //este metodo se utiliza en el getEma
-    public List<Cotizacion> normalizeCotization(List<Cotizacion> cotizaciones){
-
+    @Override
+    public List<Cotizacion> normalizeCotization(List<Cotizacion> cotizaciones) {
 
         List<Cotizacion> cotizacionNormalized = new ArrayList<>();
 
@@ -427,7 +436,8 @@ public class BotMervalBusiness {
 
     //Fecha de feriados en Argentina
     //esta lista debe actualizarse cada año
-    public boolean isItFeriado (LocalDateTime fecha){
+    @Override
+    public boolean isItFeriado(LocalDateTime fecha) {
         List<LocalDateTime> localDateTimes = new ArrayList<>();
 
         LocalDate anoNuevo = LocalDate.of(2024, Month.JANUARY, 1);
@@ -481,35 +491,43 @@ public class BotMervalBusiness {
     }
 
     //Este metodo se usara en el 003 para obtener un listados de las EMAs
-    public List<BigDecimal> getEMAs(List<Cotizacion> cotizaciones){
+    @Override
+    public List<BigDecimal> getEMAs(List<Cotizacion> cotizaciones) {
+        int intentos =3;
+        while (intentos>9){
+            try {
+                BigDecimal betaEMA3 = getBeta(3);
+                BigDecimal betaEMA9 = getBeta(9);
+                BigDecimal betaEMA21 = getBeta(21);
+                BigDecimal betaEMA50 = getBeta(50);
 
-        BigDecimal betaEMA3 = getBeta(3);
-        BigDecimal betaEMA9 = getBeta(9);
-        BigDecimal betaEMA21 = getBeta(21);
-        BigDecimal betaEMA50 = getBeta(50);
+                BigDecimal ema_1EMA3 = getEma_1(3,cotizaciones);
+                BigDecimal ema_1EMA9 = getEma_1(9,cotizaciones);
+                BigDecimal ema_1EMA21 = getEma_1(21,cotizaciones);
+                BigDecimal ema_1EMA50 = getEma_1(50,cotizaciones);
 
-        BigDecimal ema_1EMA3 = getEma_1(3,cotizaciones);
-        BigDecimal ema_1EMA9 = getEma_1(9,cotizaciones);
-        BigDecimal ema_1EMA21 = getEma_1(21,cotizaciones);
-        BigDecimal ema_1EMA50 = getEma_1(50,cotizaciones);
+                BigDecimal getEma3 = getEma(3,betaEMA3,ema_1EMA3,cotizaciones);
+                BigDecimal getEma9 = getEma(9,betaEMA9,ema_1EMA9,cotizaciones);
+                BigDecimal getEma21 = getEma(21,betaEMA21,ema_1EMA21,cotizaciones);
+                BigDecimal getEma50 = getEma(50,betaEMA50,ema_1EMA50,cotizaciones);
 
-        BigDecimal getEma3 = getEma(3,betaEMA3,ema_1EMA3,cotizaciones);
-        BigDecimal getEma9 = getEma(9,betaEMA9,ema_1EMA9,cotizaciones);
-        BigDecimal getEma21 = getEma(21,betaEMA21,ema_1EMA21,cotizaciones);
-        BigDecimal getEma50 = getEma(50,betaEMA50,ema_1EMA50,cotizaciones);
+                List<BigDecimal> emas = new ArrayList<>();
+                emas.add(getEma3);
+                emas.add(getEma9);
+                emas.add(getEma21);
+                emas.add(getEma50);
 
-        List<BigDecimal> emas = new ArrayList<>();
-        emas.add(getEma3);
-        emas.add(getEma9);
-        emas.add(getEma21);
-        emas.add(getEma50);
+                return emas;
+            }catch (Error e){
+                intentos--;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
 
-        return emas;
     }
 
-
-    public BigDecimal getEma(Integer emaNro, BigDecimal beta, BigDecimal ema_1,List<Cotizacion> cotizacions){
-
+    @Override
+    public BigDecimal getEma(Integer emaNro, BigDecimal beta, BigDecimal ema_1, List<Cotizacion> cotizacions) {
         List<Cotizacion> cotizaciones = normalizeCotization(cotizacions);
 
         BigDecimal ultimaEma = new BigDecimal("0");
@@ -531,12 +549,13 @@ public class BotMervalBusiness {
         return ultimaEma;
     }
 
-    public String isItMondaySundayOrSaturday(LocalDateTime localDate){
-
+    @Override
+    public String isItMondaySundayOrSaturday(LocalDateTime localDate) {
         DayOfWeek diaSemana = localDate.getDayOfWeek();
         return diaSemana.name().toUpperCase();
     }
 
+    @Override
     public BigDecimal getEma_1(Integer emaNro, List<Cotizacion> cotizaciones) {
         if(emaNro == 3){
             BigDecimal acumulador = new BigDecimal("0");
@@ -580,13 +599,11 @@ public class BotMervalBusiness {
         }
     }
 
-    public BigDecimal getBeta(Integer emaNro){
-
+    @Override
+    public BigDecimal getBeta(Integer emaNro) {
         BigDecimal numerador = new BigDecimal("2");
         BigDecimal n = BigDecimal.valueOf(emaNro);
         BigDecimal n1= n.add(new BigDecimal("1"));
         return numerador.divide(n1, 20, RoundingMode.HALF_UP); // Ajusta la escala y el modo de redondeo según necesites
-
     }
-
 }

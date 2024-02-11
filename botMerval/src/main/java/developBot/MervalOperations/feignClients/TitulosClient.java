@@ -1,7 +1,7 @@
 package developBot.MervalOperations.feignClients;
 
-import developBot.MervalOperations.models.clientModels.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-import developBot.MervalOperations.models.clientModels.titulos.cotizacion.Cotizacion;
+import developBot.MervalOperations.models.clientModel.titulos.cotizacionDetalle.CotizacionDetalleMobile;
+import developBot.MervalOperations.models.clientModel.titulos.cotizacion.Cotizacion;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
