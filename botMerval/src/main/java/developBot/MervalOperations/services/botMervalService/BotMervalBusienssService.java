@@ -1,4 +1,4 @@
-package developBot.MervalOperations.services;
+package developBot.MervalOperations.services.botMervalService;
 
 import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModel.miCuenta.portafolio.Posicion;

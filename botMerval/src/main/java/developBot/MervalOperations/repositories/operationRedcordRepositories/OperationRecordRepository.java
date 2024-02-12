@@ -1,6 +1,6 @@
-package developBot.MervalOperations.repositories;
+package developBot.MervalOperations.repositories.operationRedcordRepositories;
 
-import developBot.MervalOperations.entities.OperationRecordEntity;
+import developBot.MervalOperations.entities.OperationRecordEntities.OperationRecordEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -345,7 +345,7 @@ public class BotMervalServiceTest {
         LocalDateTime now = LocalDateTime.now();
         for (Cotizacion c: cotizacionNormalized) {
             if (c.getFechaHora().compareTo(now.toString())<0){
-                System.out.println(c.getFechaHora());              //Descomenta si queres visualizarel resultado
+                System.out.println(c.getFechaHora());
                 now = LocalDateTime.parse(c.getFechaHora());
             }else {
                 Assertions.fail();

@@ -1,4 +1,4 @@
-package developBot.MervalOperations.entities;
+package developBot.MervalOperations.entities.OperationRecordEntities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -6,10 +6,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "operationsLog")
+@Table(name = "operationsRecord")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -18,6 +19,11 @@ public class OperationRecordEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    @ManyToOne
+    @JoinColumn(name = "id_buyOperationNumber")
+    private BuyOperationNumberEntity buyOperationNumber;
+    @OneToMany(mappedBy = "operationRecordEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SellOperationNumberEntity> sellOperationNumbers;
     @Column
     private String simbol;
     @Column
@@ -27,7 +33,7 @@ public class OperationRecordEntity {
     @Column
     private Long purcheaseAmount;
     @Column
-    private String status; //abierta/cerrada
+    private Boolean status; //abierta/cerrada
     @Column
     private LocalDateTime saleDate;
     @Column

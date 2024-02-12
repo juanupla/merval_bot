@@ -5,11 +5,11 @@ import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Opera
 
 import developBot.MervalOperations.models.clientModel.miCuenta.portafolio.Posicion;
 import developBot.MervalOperations.models.dto.ClientJwtUtilDTO;
-import developBot.MervalOperations.models.dto.OperationRecordDTO;
-import developBot.MervalOperations.services.ClientJwtUtilService;
-import developBot.MervalOperations.services.OperationRecordService;
-import developBot.MervalOperations.services.impl.ClientJwtServiceImpl;
-import developBot.MervalOperations.services.impl.OperationRecordServiceImpl;
+import developBot.MervalOperations.models.dto.OperationRecordDto.OperationRecordDTO;
+import developBot.MervalOperations.services.iolApiService.ClientJwtUtilService;
+import developBot.MervalOperations.services.mervalBotDataService.OperationRecordService;
+import developBot.MervalOperations.services.iolApiService.impl.ClientJwtServiceImpl;
+import developBot.MervalOperations.services.mervalBotDataService.impl.OperationRecordServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -171,7 +171,7 @@ public class BotMerval {
                 if (LocalDateTime.now().isAfter(LocalDateTime.now().withHour(16).withMinute(35).withSecond(0))) {
                     //metodos para actualizar la base de datos
                     OperationRecordDTO operationRecordDTO = new OperationRecordDTO();
-                    if (operationRecordService.updateOperationsDataBase(operationRecordDTO)) {
+                    if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
 
                     }
                 }
@@ -180,7 +180,7 @@ public class BotMerval {
                     LocalDateTime.now().isBefore(LocalDateTime.now().withHour(20).withMinute(10).withSecond(0))) {
                 //metodos para actualizar la base de datos
                 OperationRecordDTO operationRecordDTO = new OperationRecordDTO();
-                if (operationRecordService.updateOperationsDataBase(operationRecordDTO)) {
+                if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
                     System.out.println("andubo el servicio");
                 }
 

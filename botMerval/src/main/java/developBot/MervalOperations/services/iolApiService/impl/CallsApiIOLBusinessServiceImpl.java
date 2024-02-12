@@ -1,4 +1,4 @@
-package developBot.MervalOperations.services.impl;
+package developBot.MervalOperations.services.iolApiService.impl;
 
 import developBot.MervalOperations.models.clientModel.miCuenta.estadoCuenta.EstadoCuenta;
 import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
@@ -9,8 +9,7 @@ import developBot.MervalOperations.models.clientModel.operar.Vender;
 import developBot.MervalOperations.models.clientModel.responseModel.Response;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-import developBot.MervalOperations.services.CallsApiIOLBusinessService;
-import org.modelmapper.ModelMapper;
+import developBot.MervalOperations.services.iolApiService.CallsApiIOLBusinessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -18,7 +17,9 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -53,7 +54,7 @@ public class CallsApiIOLBusinessServiceImpl implements CallsApiIOLBusinessServic
     }
 
     @Override
-    public Operacion[] getOperaciones(String token) {
+    public Operacion[] getOperaciones(String token) {//operaciones pendientes
         String url = "https://api.invertironline.com/api/v2/operaciones?estado=pendientes";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
@@ -279,5 +280,38 @@ public class CallsApiIOLBusinessServiceImpl implements CallsApiIOLBusinessServic
         }
 
         throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+    }
+    @Override
+    public Operacion[] getEndOfTheDayTrades(String token) {//operaciones terminadas del dia
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString("https://api.invertironline.com/api/v2/operaciones")
+                .queryParam("estado", "terminadas")
+                .queryParam("fechaDesde",LocalDate.now().toString())
+                .queryParam("fechaHasta",LocalDate.now().toString());
+
+        ResponseEntity<Operacion[]> response = restTemplate.exchange(
+                builder.toString(),
+                HttpMethod.GET,
+                entity,
+                Operacion[].class
+        );
+
+
+        try {
+            Operacion[] operaciones = response.getBody();
+            if(operaciones!= null){
+                return operaciones;
+            }
+            else {
+                throw new ErrorResponseException(HttpStatusCode.valueOf(500));
+            }
+        }catch (ErrorResponseException e){
+            throw e;
+        }
     }
 }

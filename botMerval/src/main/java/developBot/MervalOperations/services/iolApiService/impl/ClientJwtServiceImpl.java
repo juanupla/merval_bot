@@ -1,9 +1,9 @@
-package developBot.MervalOperations.services.impl;
+package developBot.MervalOperations.services.iolApiService.impl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import developBot.MervalOperations.models.dto.ClientJwtUtilDTO;
-import developBot.MervalOperations.services.ClientJwtUtilService;
+import developBot.MervalOperations.services.iolApiService.ClientJwtUtilService;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.ErrorResponseException;

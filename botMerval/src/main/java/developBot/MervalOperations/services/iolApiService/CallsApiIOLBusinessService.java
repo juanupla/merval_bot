@@ -1,4 +1,4 @@
-package developBot.MervalOperations.services;
+package developBot.MervalOperations.services.iolApiService;
 
 import developBot.MervalOperations.models.clientModel.miCuenta.estadoCuenta.EstadoCuenta;
 import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
@@ -9,6 +9,7 @@ import developBot.MervalOperations.models.clientModel.titulos.cotizacion.Cotizac
 import developBot.MervalOperations.models.clientModel.titulos.cotizacionDetalle.CotizacionDetalleMobile;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -21,4 +22,5 @@ public interface CallsApiIOLBusinessService {
     EstadoCuenta getAccountStatus(String token);
     PurcheaseResponse postBuyAsset(String token, String simbolo, Integer cantidad, Double precioPuntaVenta);
     List<Cotizacion> getCotizaciones(String token, String simbolo);
+    Operacion[] getEndOfTheDayTrades(String token);
 }
