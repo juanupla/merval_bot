@@ -17,6 +17,10 @@ public class BuyOperationNumberEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @Column
+    private String simbol;
+    @Column
     private Long number;
+    @Column
+    private Long amount;
 
 }

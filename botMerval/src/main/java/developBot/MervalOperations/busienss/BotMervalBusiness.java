@@ -8,6 +8,7 @@ import developBot.MervalOperations.models.clientModel.operar.PurcheaseResponse;
 import developBot.MervalOperations.models.clientModel.responseModel.Response;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacionDetalle.CotizacionDetalleMobile;
+import org.springframework.cglib.core.Local;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.server.ResponseStatusException;
@@ -385,6 +386,9 @@ public class BotMervalBusiness {
         fechaAyer = fechaAyer.withHour(16).withMinute(0);  //los horarios de mercado son de las 11 a 17hs, necesito obtener la ultima cotizacion del dia
         fechaAntesDeAyer = fechaAntesDeAyer.withHour(16).withMinute(0);
 
+
+        LocalDateTime fechaAyerPrima = fechaAyer.withHour(19).withMinute(0);
+        LocalDateTime fechaAntesDeAyerPrima = fechaAntesDeAyer.withHour(19).withMinute(0);
 
         Cotizacion cotizacionFechaAyer = new Cotizacion();
         Cotizacion cotizacionFechaAntesDeAyer = new Cotizacion();

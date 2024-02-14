@@ -293,6 +293,12 @@ public class BotMervalServiceTest {
         Assertions.assertTrue(fin);
     }
 
+
+
+    //Este test tiene un error grave.
+    //fijate como se armaron las cotizaciones(esto genera errores), ya que con este formato simula que hay operaciones
+    //en dias feriados o fines de semana, lo que no ocurre en el entrono real
+    //preferiblemente colocar fechas predefinidas -NO LocalDateTime-
     @Test
     public void normalizeCotizationTest(){
 

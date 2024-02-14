@@ -32,11 +32,10 @@ public class BuyOperationNumberServiceImpl implements BuyOperationNumberService 
 
     @Override
     public boolean save(BuyOperationNumberDTO buyOperationNumberDTO) {
-
         BuyOperationNumberEntity buyOperationNumberEntity = buyOperationNumberRepository.save(modelMapper.map(buyOperationNumberDTO,BuyOperationNumberEntity.class));
         if(buyOperationNumberEntity != null){
             return true;
         }
-        return false;
+        throw new RuntimeException("error al guardar operacion de compra(BuyOperationNumberServiceImpl)");
     }
 }

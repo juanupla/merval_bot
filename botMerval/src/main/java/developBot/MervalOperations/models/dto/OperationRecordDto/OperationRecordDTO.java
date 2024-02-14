@@ -32,6 +32,7 @@ public class OperationRecordDTO {
 
     private Double salePrice;
     private Long salesAmount;
+    private Double averageSellingPrice;
 
     private Double yield;
 

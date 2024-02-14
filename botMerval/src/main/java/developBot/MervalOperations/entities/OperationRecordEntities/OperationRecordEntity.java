@@ -33,11 +33,11 @@ public class OperationRecordEntity {
     @Column
     private Long purcheaseAmount;
     @Column
-    private Boolean status; //abierta/cerrada
+    private Boolean status; //open-closed
     @Column
     private LocalDateTime saleDate;
     @Column
-    private Double salePrice;
+    private Double averageSellingPrice;
     @Column
     private Long salesAmount;
     @Column

@@ -12,9 +12,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SellOperationNumberDTO {
-    @Column
+    private String simbol;
+
     private Long number;
-    @Column
+
     private Long amount;
+    private Long residualQuantity;
+    private Boolean status;
 
 }

@@ -19,7 +19,13 @@ public class SellOperationNumberEntity {
     @Column
     private Long number;
     @Column
+    private String simbol;
+    @Column
     private Long amount;
+    @Column
+    private Long residualQuantity;
+    @Column
+    private Boolean status;
     @ManyToOne
     @JoinColumn(name = "operation_record_id")
     private OperationRecordEntity operationRecordEntity;
