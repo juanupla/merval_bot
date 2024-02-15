@@ -168,28 +168,27 @@ public class BotMervalServiceImpl implements BotMervalService {
 
                         }
                         if (LocalDateTime.now().isAfter(LocalDateTime.now().withHour(16).withMinute(35).withSecond(0)) &&
-                                LocalDateTime.now().isBefore(LocalDateTime.now().withHour(19).withMinute(10).withSecond(0))) {
+                                LocalDateTime.now().isBefore(LocalDateTime.now().withHour(18).withMinute(10).withSecond(0))) {
 
                             //metodos para actualizar la base de datos respecto de oepraciones
                             ClientJwtUtilDTO clientJwtUtilDTO = clientJwtUtilService.getToken();
 
                             if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
-                                System.out.println("andubo el servicio");
+                                System.out.println("operaciones del dia actualizadas");
                             }
                         }
                         //crear un boolean: si estamos fuera de horario de mercado, qué horario es y dormirlo hasta la apertura siguiente
                     }
                     if (!nombre.equals("SUNDAY") && !nombre.equals("SATURDAY") && !botMervalBusienssService.isItFeriado(LocalDateTime.now())) {
                         if (LocalDateTime.now().isAfter(LocalDateTime.now().withHour(16).withMinute(35).withSecond(0)) &&
-                                LocalDateTime.now().isBefore(LocalDateTime.now().withHour(19).withMinute(10).withSecond(0))) {
-
+                                LocalDateTime.now().isBefore(LocalDateTime.now().withHour(18).withMinute(10).withSecond(0))) {
 
                             //puede ir estructura try/catch
                             //metodos para actualizar la base de datos respecto de oepraciones
                             ClientJwtUtilDTO clientJwtUtilDTO = clientJwtUtilService.getToken();
 
                             if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
-                                System.out.println("andubo el servicio");
+                                System.out.println("operaciones del dia actualizadas");
                             }
                         }
                     }
