@@ -28,5 +28,5 @@ public class SellOperationNumberEntity {
     private Boolean status;
     @ManyToOne
     @JoinColumn(name = "operation_record_id")
-    private OperationRecordEntity operationRecordEntity;
+    private OperationRecordEntity operationRecordId;
 }

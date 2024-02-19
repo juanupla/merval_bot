@@ -1,4 +1,4 @@
-package developBot.MervalOperations.services.botMervalService.impl;
+package developBot.MervalOperations.services.mervalBotService.impl;
 
 import developBot.MervalOperations.models.clientModel.miCuenta.estadoCuenta.EstadoCuenta;
 import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
@@ -8,7 +8,7 @@ import developBot.MervalOperations.models.clientModel.operar.PurcheaseResponse;
 import developBot.MervalOperations.models.clientModel.responseModel.Response;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacion.Cotizacion;
 import developBot.MervalOperations.models.clientModel.titulos.cotizacionDetalle.CotizacionDetalleMobile;
-import developBot.MervalOperations.services.botMervalService.BotMervalBusienssService;
+import developBot.MervalOperations.services.mervalBotService.BotMervalBusienssService;
 import developBot.MervalOperations.services.iolApiService.CallsApiIOLBusinessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

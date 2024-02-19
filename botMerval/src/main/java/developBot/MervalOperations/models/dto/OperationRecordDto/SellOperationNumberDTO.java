@@ -12,6 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SellOperationNumberDTO {
+    private UUID id;
     private String simbol;
 
     private Long number;
@@ -19,5 +20,7 @@ public class SellOperationNumberDTO {
     private Long amount;
     private Long residualQuantity;
     private Boolean status;
+    private OperationRecordEntity operationRecordId;
+
 
 }

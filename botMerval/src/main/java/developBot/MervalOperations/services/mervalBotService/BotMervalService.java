@@ -1,4 +1,4 @@
-package developBot.MervalOperations.services.botMervalService;
+package developBot.MervalOperations.services.mervalBotService;
 
 import org.springframework.stereotype.Service;
 

@@ -15,6 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -67,24 +71,31 @@ public class OperationRecordServiceImpl implements OperationRecordService {
             //si es venta tenemos que verificar que no haya sido cargada
             //si no esta la cargamos
             //preguntamos si existe esta orden y que el status sea cerrado.Si es abierto todavia hay operaciones disponibles
+
+
+            //si la bandera es true es porque esta es una operacion de venta(selloperation) que ya cancelo una parte de la venta, no toda.
+            boolean sellOperationFlag = false;
+
             SellOperationNumberDTO sellOperationNumberDTO = doesSellOperationNumberServiceExist(operacion, false);
             if (sellOperationNumberDTO == null) {
-                throw new RuntimeException("la operacion ya esta registrada");
+                sellOperationNumberDTO = doesSellOperationNumberServiceExist(operacion, true);
+                sellOperationFlag = true;
+                if (sellOperationNumberDTO == null) {
+                    throw new RuntimeException("no se guardo la operacion de venta");
+                }
             }
-
-            //si la operacion de venta no esta registrada, la guardamos.
-            //si esta guardada igual recibimos el sellOperationNumberDTO
-             sellOperationNumberDTO = doesSellOperationNumberServiceExist(operacion, true);
-            if (sellOperationNumberDTO == null) {
-                throw new RuntimeException("no se guardo la operacion de venta");
-            }
+            //hasta aca verificamos que el sellOperation no existe o que existe en estado abierto. En otro caso devolvera una exepcion
 
 
+
+
+            //busca operationsRecord en estado abiertas y las procesa
             Optional<OperationRecordEntity> operationRecordEntityOpt = operationRecordRepository.findBySimbolAndStatus(sellOperationNumberDTO.getSimbol(), true);
             if (operationRecordEntityOpt.isEmpty()) {
                 //no hay ningun activo (operacion de compra) abierto con este simbolo y/o ese monto
                 throw new RuntimeException();
             }
+
             OperationRecordDTO operationRecordDTO = modelMapper.map(operationRecordEntityOpt.get(), OperationRecordDTO.class);
 
             //cantidad vendida
@@ -92,9 +103,15 @@ public class OperationRecordServiceImpl implements OperationRecordService {
 
             Long purchaseAmount = operationRecordDTO.getPurchaseAmount();
 
+            //este debe encargarse de varias cosas:
+            //_luego de concretar la venta (si es que previamente-en este codigo- se encontro un operationalRecord con este simbolo y con compras a cancelar)
+            //-debe concretar 2 procesos importantes. Primero actualizar el sellOperation. con cuidado en el residualQuantity y el status
             sellEjecution(quantitysold,operationRecordDTO,purchaseAmount, sellOperationNumberDTO);
         }
     }
+
+    //este metodo debe actualizarse
+    //ya que al realizar una venta no esta contemplado el status de sellOperation el cual habria que actualizar cada vez que se ejecutan ventas
     @Transactional
     public void sellEjecution(Long quantitysold,OperationRecordDTO operationRecordDTO,Long purchaseAmount,SellOperationNumberDTO sellOperationNumberDTO){
         Long sellAmount;
@@ -185,21 +202,20 @@ public class OperationRecordServiceImpl implements OperationRecordService {
                 sellOperationNumberDTO.setAmount(operacion.getCantidad());
                 sellOperationNumberDTO.setSimbol(operacion.getSimbolo());
                 return sellOperationNumberDTO;
-            } else {
-                throw new RuntimeException("este numbero de operacion ya existe");
+            }
+            else {
+                return null;
             }
         } else {
+            if (!sellOperationNumberService.exist(operacion.getNumero().longValue(), true)) {
+                return null;
+            }
             SellOperationNumberDTO sellOperationNumberDTO = new SellOperationNumberDTO();
 
             sellOperationNumberDTO.setNumber(operacion.getNumero().longValue());
             sellOperationNumberDTO.setAmount(operacion.getCantidad());
             sellOperationNumberDTO.setSimbol(operacion.getSimbolo());
-            if (!sellOperationNumberService.exist(operacion.getNumero().longValue(), true)) {
-                if (!sellOperationNumberService.save(sellOperationNumberDTO)) {
-                    throw new RuntimeException();
-                }
-                return sellOperationNumberDTO;
-            }
+            sellOperationNumberDTO.setStatus(true);
             return sellOperationNumberDTO;
         }
     }
@@ -265,6 +281,56 @@ public class OperationRecordServiceImpl implements OperationRecordService {
             throw new RuntimeException();
         }
         //-----------------------------------------------------------------------------------
+    }
+
+    //este metodo se encargara de hacer los calculos de rendimientos, rendimientosAnualizados y resultado(positiva/negativa)
+    @Override
+    @Transactional
+    public void closedOperationRecordProcessor(){
+        Optional<List<OperationRecordEntity>> operationRecordOptional = operationRecordRepository.findNullResult();
+        if (operationRecordOptional.get() == null){
+            throw new RuntimeException();
+        }
+        //List de solo lectura!
+        OperationRecordDTO[] operationRecordDTOS = modelMapper.map(operationRecordOptional.get(),OperationRecordDTO[].class);
+
+        for (OperationRecordDTO operation: operationRecordDTOS) {
+            //Por cada operacion en estado cerrada que no ha sido procesada acá comienza su camino. Primero:
+            //Rendimiento:
+
+            Double purchasePrice = operation.getPurchasePrice();
+            Double salePrice = operation.getSalePrice();
+
+            Double yield = ((salePrice*100)/purchasePrice)-100;
+
+            operation.setYield(yield);
+
+            //rendimiento anualizado:
+            // Ranualizado = (1+Rtotal)^(365/n) - 1
+            //donde n periodo de dias en la operacion
+
+            Duration duracion = Duration.between(operation.getDateOfPurchase(), operation.getSaleDate());
+
+            String duracionString = String.valueOf(duracion.toDays());
+
+            Double rate = 365.0 / Double.parseDouble(duracionString);
+            Double annualizedYield = Math.pow(1 + yield, rate) - 1;
+
+            operation.setAnnualizedYield(annualizedYield);
+
+            //resultado
+            if(operation.getPurchasePrice()>operation.getSalePrice()){
+                operation.setResult("positiva");
+            }
+            else {
+                operation.setResult("negativa");
+            }
+            OperationRecordEntity operationRecordEntityUpdated = operationRecordRepository.save(modelMapper.map(operation,OperationRecordEntity.class));
+            if(operationRecordEntityUpdated == null){
+                throw new RuntimeException("No se actualizo el rendimiento/rend.anualizado/resultado");
+            }
+        }
+
     }
 }
 

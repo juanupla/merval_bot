@@ -1,11 +1,10 @@
-package developBot.MervalOperations.services.botMervalService.impl;
+package developBot.MervalOperations.services.mervalBotService.impl;
 
 import developBot.MervalOperations.models.clientModel.miCuenta.operaciones.Operacion;
 import developBot.MervalOperations.models.clientModel.miCuenta.portafolio.Posicion;
 import developBot.MervalOperations.models.dto.ClientJwtUtilDTO;
-import developBot.MervalOperations.models.dto.OperationRecordDto.OperationRecordDTO;
-import developBot.MervalOperations.services.botMervalService.BotMervalBusienssService;
-import developBot.MervalOperations.services.botMervalService.BotMervalService;
+import developBot.MervalOperations.services.mervalBotService.BotMervalBusienssService;
+import developBot.MervalOperations.services.mervalBotService.BotMervalService;
 import developBot.MervalOperations.services.iolApiService.ClientJwtUtilService;
 import developBot.MervalOperations.services.mervalBotDataService.OperationRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -176,6 +175,7 @@ public class BotMervalServiceImpl implements BotMervalService {
                             if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
                                 System.out.println("operaciones del dia actualizadas");
                             }
+                            operationRecordService.closedOperationRecordProcessor();
                         }
                         //crear un boolean: si estamos fuera de horario de mercado, qué horario es y dormirlo hasta la apertura siguiente
                     }
@@ -190,6 +190,7 @@ public class BotMervalServiceImpl implements BotMervalService {
                             if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
                                 System.out.println("operaciones del dia actualizadas");
                             }
+                            operationRecordService.closedOperationRecordProcessor();
                         }
                     }
                 } catch (Exception e) {

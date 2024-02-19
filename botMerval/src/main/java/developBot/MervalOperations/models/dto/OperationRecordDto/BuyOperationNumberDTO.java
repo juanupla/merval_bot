@@ -14,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BuyOperationNumberDTO {
+    private UUID id;
     private String simbol;
     private Long number;
     private Long amount;
