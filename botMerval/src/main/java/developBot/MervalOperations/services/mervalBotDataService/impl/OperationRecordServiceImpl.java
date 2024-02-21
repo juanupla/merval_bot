@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,21 +70,11 @@ public class OperationRecordServiceImpl implements OperationRecordService {
             //si no esta la cargamos
             //preguntamos si existe esta orden y que el status sea cerrado.Si es abierto todavia hay operaciones disponibles
 
-
-            //si la bandera es true es porque esta es una operacion de venta(selloperation) que ya cancelo una parte de la venta, no toda.
-            boolean sellOperationFlag = false;
-
-            SellOperationNumberDTO sellOperationNumberDTO = doesSellOperationNumberServiceExist(operacion, false);
-            if (sellOperationNumberDTO == null) {
-                sellOperationNumberDTO = doesSellOperationNumberServiceExist(operacion, true);
-                sellOperationFlag = true;
-                if (sellOperationNumberDTO == null) {
-                    throw new RuntimeException("no se guardo la operacion de venta");
-                }
+            SellOperationNumberDTO sellOperationNumberDTO = doesSellOperationNumberServiceExist(operacion);
+            if (!sellOperationNumberDTO.getStatus()) {
+                throw new RuntimeException();//operacion cerrada
             }
             //hasta aca verificamos que el sellOperation no existe o que existe en estado abierto. En otro caso devolvera una exepcion
-
-
 
 
             //busca operationsRecord en estado abiertas y las procesa
@@ -106,9 +94,12 @@ public class OperationRecordServiceImpl implements OperationRecordService {
             //este debe encargarse de varias cosas:
             //_luego de concretar la venta (si es que previamente-en este codigo- se encontro un operationalRecord con este simbolo y con compras a cancelar)
             //-debe concretar 2 procesos importantes. Primero actualizar el sellOperation. con cuidado en el residualQuantity y el status
+            //si etsa ok, debe actualizar el operationRecord!
             sellEjecution(quantitysold,operationRecordDTO,purchaseAmount, sellOperationNumberDTO);
         }
     }
+
+
 
     //este metodo debe actualizarse
     //ya que al realizar una venta no esta contemplado el status de sellOperation el cual habria que actualizar cada vez que se ejecutan ventas
@@ -137,8 +128,9 @@ public class OperationRecordServiceImpl implements OperationRecordService {
                 }
             }
 
-        } else if (quantitysold > 0) {  //si ya se realizo ventas en el operationRecord hay 2 opciones
-            // deja a la c/compra a cancelar en 2 caminos.. o es mas alto o es mas bajo que mi cantidad de venta
+        } else if (quantitysold > 0) {
+            //si ya se realizo ventas en el operationRecord hay 2 opciones
+            //deja a la c/compra a cancelar en 2 caminos.. o es mas alto o es mas bajo que mi cantidad de venta
             long purchaseStoCancel = operationRecordDTO.getPurchaseAmount() - operationRecordDTO.getSalesAmount();
 
             if (sellOperationNumberDTO.getResidualQuantity() == null) {
@@ -193,54 +185,45 @@ public class OperationRecordServiceImpl implements OperationRecordService {
         }
     }
 
-    public SellOperationNumberDTO doesSellOperationNumberServiceExist(Operacion operacion, Boolean status) {
-        if (!status) {
-            if (!sellOperationNumberService.exist(operacion.getNumero().longValue(), false)) {
-                SellOperationNumberDTO sellOperationNumberDTO = new SellOperationNumberDTO();
 
-                sellOperationNumberDTO.setNumber(operacion.getNumero().longValue());
-                sellOperationNumberDTO.setAmount(operacion.getCantidad());
-                sellOperationNumberDTO.setSimbol(operacion.getSimbolo());
-                return sellOperationNumberDTO;
-            }
-            else {
-                return null;
-            }
-        } else {
-            if (!sellOperationNumberService.exist(operacion.getNumero().longValue(), true)) {
-                return null;
-            }
-            SellOperationNumberDTO sellOperationNumberDTO = new SellOperationNumberDTO();
+    //este metodo CAMBIO. fijate donde se utiliza
+    public SellOperationNumberDTO doesSellOperationNumberServiceExist(Operacion operacion) {
 
-            sellOperationNumberDTO.setNumber(operacion.getNumero().longValue());
-            sellOperationNumberDTO.setAmount(operacion.getCantidad());
-            sellOperationNumberDTO.setSimbol(operacion.getSimbolo());
-            sellOperationNumberDTO.setStatus(true);
+        SellOperationNumberDTO sellOperationNumberDTO = new SellOperationNumberDTO();
+        sellOperationNumberDTO.setNumber(operacion.getNumero().longValue());
+        sellOperationNumberDTO.setAmount(operacion.getCantidad());
+        sellOperationNumberDTO.setSimbol(operacion.getSimbolo());
+        if (sellOperationNumberService.exist(operacion.getNumero().longValue(), false)) {
+            sellOperationNumberDTO.setStatus(false);//donde se llame hay q verificar. Si es false, este sellOperation esta cerrado!
+            return sellOperationNumberDTO;
+
+        } else if (sellOperationNumberService.exist(operacion.getNumero().longValue(), true)) {
+            sellOperationNumberDTO.setStatus(true);//vendio una parte y existe ya en nuestra base. se puede procesar el resto y actualizar
+            return sellOperationNumberDTO;
+        }
+        else {
+            sellOperationNumberDTO.setStatus(null);//esta operacion nunca se registro. Se procesa y se guarda. si vende t0do-> status=false
             return sellOperationNumberDTO;
         }
     }
 
     public boolean isPurchaseGreaterThanOrEqualToTheSale(SellOperationNumberDTO sellOperationNumberDTO, OperationRecordDTO operationRecordDTO, Long purchaseAmount, Long sellAmount) {
 
-        //purchaseAmount y sellAmount como parametros
-        //armar bloque
-        //------------------------------------------------------------------------------------------
-        //actualizamos valor residual
+
         if (purchaseAmount >= sellAmount) {
 
+            //actualizamos valor residual y el estado de la venta
             sellOperationNumberDTO.setResidualQuantity(0L);
+            sellOperationNumberDTO.setStatus(false);
             if (sellOperationNumberService.save(sellOperationNumberDTO)) {
                 //si t0do va bien
                 long res = purchaseAmount - sellAmount;
                 if (res == 0) {
                     operationRecordDTO.setSalesAmount(operationRecordDTO.getPurchaseAmount());
+                    operationRecordDTO.setStatus(false); //si la cantidad que cierro son iguales, operationRecord queda completa y cerrada
                 } else {
                     operationRecordDTO.setSalesAmount(operationRecordDTO.getSalesAmount() + sellAmount);
                 }
-                if (operationRecordDTO.getPurchaseAmount().equals(operationRecordDTO.getSalesAmount())) {
-                    operationRecordDTO.setStatus(false); //si la cantidad que cierro son iguales, operationRecord queda completa y cerrada
-                }
-
                 OperationRecordEntity operationRecordSaved = operationRecordRepository.save(modelMapper.map(operationRecordDTO, OperationRecordEntity.class));
                 if (operationRecordSaved == null) {
                     throw new RuntimeException();

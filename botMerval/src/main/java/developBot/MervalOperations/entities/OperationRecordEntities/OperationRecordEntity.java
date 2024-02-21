@@ -22,7 +22,7 @@ public class OperationRecordEntity {
     @ManyToOne
     @JoinColumn(name = "id_buyOperationNumber")
     private BuyOperationNumberEntity buyOperationNumber;
-    @OneToMany(mappedBy = "operationRecordEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "operationRecordId", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SellOperationNumberEntity> sellOperationNumbers;
     @Column
     private String simbol;
