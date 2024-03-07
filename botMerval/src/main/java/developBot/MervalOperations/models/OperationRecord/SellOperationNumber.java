@@ -1,7 +1,6 @@
-package developBot.MervalOperations.models.dto.OperationRecordDto;
+package developBot.MervalOperations.models.OperationRecord;
 
 import developBot.MervalOperations.entities.OperationRecordEntities.OperationRecordEntity;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +10,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SellOperationNumberDTO {
+public class SellOperationNumber {
     private UUID id;
     private String simbol;
 

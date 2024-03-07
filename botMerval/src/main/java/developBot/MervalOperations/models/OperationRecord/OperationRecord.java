@@ -1,21 +1,24 @@
-package developBot.MervalOperations.models.dto.OperationRecordDto;
+package developBot.MervalOperations.models.OperationRecord;
 
-import jakarta.persistence.Column;
+import developBot.MervalOperations.entities.OperationRecordEntities.SellOperationNumberEntity;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OperationRecordDTO {
+public class OperationRecord {
 
     @NotNull
     private UUID id;
+    private UUID buyOperationNumberId;
+    private List<SellOperationNumber> sellOperationNumbers;
     @NotNull
     private String simbol;
     @NotNull
@@ -27,7 +30,6 @@ public class OperationRecordDTO {
     @NotNull
     private Boolean status; //abierta/cerrada
     private LocalDateTime saleDate;
-    private Double salePrice;
     private Long salesAmount;
     private Double averageSellingPrice;
     private Double yield;

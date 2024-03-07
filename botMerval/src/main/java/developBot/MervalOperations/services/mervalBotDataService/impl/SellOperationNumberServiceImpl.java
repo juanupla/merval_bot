@@ -1,7 +1,7 @@
 package developBot.MervalOperations.services.mervalBotDataService.impl;
 
 import developBot.MervalOperations.entities.OperationRecordEntities.SellOperationNumberEntity;
-import developBot.MervalOperations.models.dto.OperationRecordDto.SellOperationNumberDTO;
+import developBot.MervalOperations.models.OperationRecord.SellOperationNumber;
 import developBot.MervalOperations.repositories.operationRedcordRepositories.SellOperationNumberRepository;
 import developBot.MervalOperations.services.mervalBotDataService.SellOperationNumberService;
 import org.modelmapper.ModelMapper;
@@ -27,9 +27,9 @@ public class SellOperationNumberServiceImpl implements SellOperationNumberServic
     }
 
     @Override
-    public Boolean save(SellOperationNumberDTO sellOperationNumberDTO) {
+    public Boolean save(SellOperationNumber sellOperationNumber) {
 
-        SellOperationNumberEntity sellOperationNumberEntity = sellOperationNumberRepository.save(modelMapper.map(sellOperationNumberDTO,SellOperationNumberEntity.class));
+        SellOperationNumberEntity sellOperationNumberEntity = sellOperationNumberRepository.save(modelMapper.map(sellOperationNumber,SellOperationNumberEntity.class));
         if (sellOperationNumberEntity != null){
             return true;
         }

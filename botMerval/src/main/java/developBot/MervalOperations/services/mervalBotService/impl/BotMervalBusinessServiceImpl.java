@@ -40,7 +40,7 @@ public class BotMervalBusinessServiceImpl implements BotMervalBusienssService {
 
 
     //001 Este método elimina aquellos activos presente en la cartera de la lista inicial a recorrer ya que
-    //por cada activo se abriran posiciones del 6% del capital, sin ajuste.
+    //por cada activo se abriran posiciones del 7.5% del capital, sin ajuste.
     //así solo se podran procesar aquellos activos que no se encuentren en cartera.
     @Override
     public List<String> removeOperationalTickets(String token, String pais, List<String> ticketsList) {
@@ -490,7 +490,7 @@ public class BotMervalBusinessServiceImpl implements BotMervalBusienssService {
         return false;
     }
 
-    //Este metodo se usara en el 003 para obtener un listados de las EMAs
+    //Este metodo se usara en el calculoEMAs() para obtener un listados de las EMAs
     @Override
     public List<BigDecimal> getEMAs(List<Cotizacion> cotizaciones) {
         int intentos =3;

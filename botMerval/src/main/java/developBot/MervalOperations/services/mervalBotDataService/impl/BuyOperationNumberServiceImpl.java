@@ -1,7 +1,7 @@
 package developBot.MervalOperations.services.mervalBotDataService.impl;
 
 import developBot.MervalOperations.entities.OperationRecordEntities.BuyOperationNumberEntity;
-import developBot.MervalOperations.models.dto.OperationRecordDto.BuyOperationNumberDTO;
+import developBot.MervalOperations.models.OperationRecord.BuyOperationNumber;
 import developBot.MervalOperations.repositories.operationRedcordRepositories.BuyOperationNumberRepository;
 import developBot.MervalOperations.services.mervalBotDataService.BuyOperationNumberService;
 import org.modelmapper.ModelMapper;
@@ -22,8 +22,8 @@ public class BuyOperationNumberServiceImpl implements BuyOperationNumberService 
 
         Optional<BuyOperationNumberEntity> buyOperationNumberEntity = buyOperationNumberRepository.findByNumber(numberOperation);
         if(buyOperationNumberEntity.isPresent()){
-            BuyOperationNumberDTO buyOperationNumberDTO =modelMapper.map(buyOperationNumberEntity,BuyOperationNumberDTO.class);
-            if (buyOperationNumberDTO.getNumber().equals(numberOperation)){
+            BuyOperationNumber buyOperationNumber =modelMapper.map(buyOperationNumberEntity, BuyOperationNumber.class);
+            if (buyOperationNumber.getNumber().equals(numberOperation)){
                 return true;
             }
         }
@@ -31,8 +31,8 @@ public class BuyOperationNumberServiceImpl implements BuyOperationNumberService 
     }
 
     @Override
-    public boolean save(BuyOperationNumberDTO buyOperationNumberDTO) {
-        BuyOperationNumberEntity buyOperationNumberEntity = buyOperationNumberRepository.save(modelMapper.map(buyOperationNumberDTO,BuyOperationNumberEntity.class));
+    public boolean save(BuyOperationNumber buyOperationNumber) {
+        BuyOperationNumberEntity buyOperationNumberEntity = buyOperationNumberRepository.save(modelMapper.map(buyOperationNumber,BuyOperationNumberEntity.class));
         if(buyOperationNumberEntity != null){
             return true;
         }
