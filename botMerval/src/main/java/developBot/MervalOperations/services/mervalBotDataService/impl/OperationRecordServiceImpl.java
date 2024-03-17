@@ -51,15 +51,6 @@ public class OperationRecordServiceImpl implements OperationRecordService {
         return true;
     }
 
-
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //
     @Transactional
     public void processSingleOperation(Operacion operacion) {
 

@@ -40,10 +40,12 @@ public class BotMervalServiceImpl implements BotMervalService {
             @Override
             public void run() {
                 try {
+                    //fijate de donde es el servidor que ejecuta y revisa t0dos los LocalDateTime.now()
+
                     LocalDateTime now = LocalDateTime.now();
                     DayOfWeek dia = now.getDayOfWeek();
                     String nombre = dia.name();
-                    if (!nombre.equals("SUNDAY") && !nombre.equals("SATURDAY") &&
+                    if (!nombre.equals("SUNDAY") && !nombre.equals("SATURDAY") && !botMervalBusienssService.isItFeriado(LocalDateTime.now()) &&
                             LocalDateTime.now().isAfter(LocalDateTime.now().withHour(11).withMinute(0).withSecond(0))
                             && LocalDateTime.now().isBefore(LocalDateTime.now().withHour(16).withMinute(58).withSecond(0))) {
 
@@ -69,9 +71,9 @@ public class BotMervalServiceImpl implements BotMervalService {
 
                                 //Activos operados por el bot:
                                 String totalTickets = "AMZN,GOOGL,TSLA,GLOB,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,BYMA,NVDA,YPFD,MSFT,PAMP,QCOM,COME,DISN,MELI,AAPL,BA.C,MCD,GOLD,PG,META,PBR,NKE,WMT,V,NFLX,CAT,BMA,GGAL,SBUX,ARKK,JPM";
-                                //
+
                                 String[] elementos = totalTickets.split(",");
-                                activosBot = Arrays.asList(elementos);//Recordá, esta lista es de SOLO LECTURA, por su consturcion
+                                activosBot = Arrays.asList(elementos); //Recordá, esta lista es de SOLO LECTURA, por su consturcion
 
 
                                 StringBuilder print = new StringBuilder("Lista de activos considerados: ");
@@ -157,8 +159,6 @@ public class BotMervalServiceImpl implements BotMervalService {
 
                                 System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
                                 System.out.println("Sistema duerme 15 minutos en la fecha: " + LocalDateTime.now().toString());
-
-
                             }
                             catch (Error e){
                                 intentos--;
@@ -166,51 +166,33 @@ public class BotMervalServiceImpl implements BotMervalService {
                             }
 
                         }
-                        if (LocalDateTime.now().isAfter(LocalDateTime.now().withHour(16).withMinute(35).withSecond(0)) &&
-                                LocalDateTime.now().isBefore(LocalDateTime.now().withHour(18).withMinute(10).withSecond(0))) {
 
-                            //metodos para actualizar la base de datos respecto de oepraciones
-                            ClientJwtUtilDTO clientJwtUtilDTO = clientJwtUtilService.getToken();
-
-                            if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
-                                System.out.println("operaciones del dia actualizadas");
-                            }
-                            operationRecordService.closedOperationRecordProcessor();
-                        }
-                        //crear un boolean: si estamos fuera de horario de mercado, qué horario es y dormirlo hasta la apertura siguiente
                     }
-                    if (!nombre.equals("SUNDAY") && !nombre.equals("SATURDAY") && !botMervalBusienssService.isItFeriado(LocalDateTime.now())) {
-                        if (LocalDateTime.now().isAfter(LocalDateTime.now().withHour(16).withMinute(35).withSecond(0)) &&
-                                LocalDateTime.now().isBefore(LocalDateTime.now().withHour(18).withMinute(10).withSecond(0))) {
+                    try {
+                        //revisar todos los localdatetime.now() al subir proyecto
 
-                            //puede ir estructura try/catch
-                            //metodos para actualizar la base de datos respecto de oepraciones
-                            ClientJwtUtilDTO clientJwtUtilDTO = clientJwtUtilService.getToken();
+                        if (!nombre.equals("SUNDAY") && !nombre.equals("SATURDAY") && !botMervalBusienssService.isItFeriado(LocalDateTime.now())) {
+                            if (LocalDateTime.now().isAfter(LocalDateTime.now().withHour(16).withMinute(35).withSecond(0)) &&
+                                    LocalDateTime.now().isBefore(LocalDateTime.now().withHour(19).withMinute(10).withSecond(0))) {
 
-                            if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
-                                System.out.println("operaciones del dia actualizadas");
+                                //puede ir estructura try/catch
+                                //metodos para actualizar la base de datos respecto de oepraciones
+                                ClientJwtUtilDTO clientJwtUtilDTO = clientJwtUtilService.getToken();
+
+                                if (operationRecordService.updateOperationsDataBase(clientJwtUtilDTO.getAccesToken())) {
+                                    System.out.println("operaciones del dia actualizadas");
+                                }
+                                operationRecordService.closedOperationRecordProcessor();
                             }
-                            operationRecordService.closedOperationRecordProcessor();
                         }
+                    }catch (Exception e){
+
                     }
+
                 } catch (Exception e) {
-
+                    //try/catch del metodo run()
                 }
-            }
-        }, 0, 15 * 60 * 1000); // ejecuta cada 15 minutos
-
-        do {
-
-//            if (LocalDateTime.now().isAfter(LocalDateTime.now().withHour(16).withMinute(35).withSecond(0)) &&
-//                    LocalDateTime.now().isBefore(LocalDateTime.now().withHour(19).withMinute(10).withSecond(0))) {
-//                //metodos para actualizar la base de datos
-//                OperationRecordDTO operationRecordDTO = new OperationRecordDTO();
-//                if (operationRecordService.updateOperationsDataBase(operationRecordDTO)) {
-//                    System.out.println("andubo el servicio");
-//                }
-//
-//            }
-
-        } while (true);
+            }//finaliza la clase run()
+        }, 0, 60 * 60 * 1000); // ejecuta cada 60 minutos  //finaliza el new TimetTask()
     }
 }
