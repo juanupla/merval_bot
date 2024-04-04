@@ -444,6 +444,7 @@ public class BotMervalBusinessServiceImpl implements BotMervalBusienssService {
         LocalDate carnaval1 = LocalDate.of(2024, Month.FEBRUARY, 12);
         LocalDate carnaval2 = LocalDate.of(2024, Month.FEBRUARY, 13);
         LocalDate diaMemoria = LocalDate.of(2024, Month.MARCH, 24);
+        LocalDate feriadoPuente = LocalDate.of(2024,Month.MARCH,28);
         LocalDate viernesSanto = LocalDate.of(2024, Month.MARCH, 29);
         LocalDate feriadoTuristico1 = LocalDate.of(2024, Month.APRIL, 1);
         LocalDate diaMalvinas = LocalDate.of(2024, Month.APRIL, 2);
@@ -464,6 +465,7 @@ public class BotMervalBusinessServiceImpl implements BotMervalBusienssService {
         localDateTimes.add(carnaval1.atStartOfDay());
         localDateTimes.add(carnaval2.atStartOfDay());
         localDateTimes.add(diaMemoria.atStartOfDay());
+        localDateTimes.add(feriadoPuente.atStartOfDay());
         localDateTimes.add(viernesSanto.atStartOfDay());
         localDateTimes.add(feriadoTuristico1.atStartOfDay());
         localDateTimes.add(diaMalvinas.atStartOfDay());

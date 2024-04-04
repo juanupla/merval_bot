@@ -291,7 +291,7 @@ public class CallsApiIOLBusinessServiceImpl implements CallsApiIOLBusinessServic
         HttpEntity<String> entity = new HttpEntity<>(headers);
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString("https://api.invertironline.com/api/v2/operaciones")
                 .queryParam("estado", "terminadas")
-                .queryParam("fechaDesde",LocalDate.now().toString())
+                .queryParam("fechaDesde",LocalDate.now().minusDays(2).toString())
                 .queryParam("fechaHasta",LocalDate.now().toString());
 
         ResponseEntity<Operacion[]> response = restTemplate.exchange(

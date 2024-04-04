@@ -44,6 +44,7 @@ public class OperationRecordServiceImpl implements OperationRecordService {
             try {
                 processSingleOperation(operacion);
             } catch (Error e) {
+                System.out.println("Error actualizando 1 operacion");
                 continue;
             }
         }
@@ -59,57 +60,61 @@ public class OperationRecordServiceImpl implements OperationRecordService {
         if (operacion.getTipo().equals("Compra") && (operacion.getEstado().equals("terminada") ||
                 (operacion.getEstado().equals("cancelada") && operacion.getCantidadOperada() != null))) {
 
-            BuyOperationNumber buyOperationNumber = doesBuyNumberOperationServiceExist(operacion);
-            if (buyOperationNumber == null) {
-                throw new RuntimeException("este numero de operacion se encuentra registrado");
-            }
-
-            OperationRecord operationRecord = saveBuyOperationNumberDTO(buyOperationNumber, operacion);
-            if (operationRecord == null) {
-                throw new RuntimeException("Error operationalRecord en la compra");
-            }
-
+            purchasingProcess(operacion);
 
         } else if (operacion.getTipo().equals("Venta") && (operacion.getEstado().equals("terminada") || (operacion.getEstado().equals("cancelada") && operacion.getCantidadOperada() != null))) {
-            //si es venta tenemos que verificar que no haya sido cargada
-            //si no esta la cargamos
-            //preguntamos si existe esta orden y que el status sea cerrado.Si es abierto todavia hay operaciones disponibles
-
-            SellOperationNumber sellOperationNumber = doesSellOperationNumberServiceExist(operacion);
-            if (!sellOperationNumber.getStatus()) {
-                throw new RuntimeException();//operacion cerrada
-            }
-            //hasta aca verificamos que el sellOperation no existe o que existe en estado abierto. En otro caso devolvera una exepcion
-
-
-            //busca operationsRecord en estado abiertas y las procesa
-            Optional<OperationRecordEntity> operationRecordEntityOpt = operationRecordRepository.findBySimbolAndStatus(sellOperationNumber.getSimbol(), true);
-            if (operationRecordEntityOpt.isEmpty()) {
-                //no hay ningun activo (operacion de compra) abierto con este simbolo
-                throw new RuntimeException();
-            }
-
-            OperationRecord operationRecord = modelMapper.map(operationRecordEntityOpt.get(), OperationRecord.class);
-
-
-
-            //este debe encargarse de varias cosas:
-            //_luego de concretar la venta (si es que previamente-en este codigo- se encontro un operationalRecord con este simbolo y con compras a cancelar)
-            //-debe concretar 2 procesos importantes. Primero actualizar el sellOperation. con cuidado en el residualQuantity y el status
-            //si etsa ok, debe actualizar el operationRecord!
-            sellEjecution(operationRecord, sellOperationNumber);
+            salesProcess(operacion);
         }
     }
 
+    public void purchasingProcess(Operacion operacion){
+        BuyOperationNumber buyOperationNumber = doesBuyNumberOperationServiceExist(operacion);
+        if (buyOperationNumber == null) {
+            throw new RuntimeException("este numero de operacion se encuentra registrado");
+        }
 
-    //
-    //
+        OperationRecord operationRecord = saveBuyOperationNumberDTO(buyOperationNumber, operacion);
+        if (operationRecord == null) {
+            throw new RuntimeException("Error operationalRecord en la compra");
+        }
+    }
+
+    public void salesProcess(Operacion operacion){
+        //si es venta tenemos que verificar que no haya sido cargada
+        //si no esta la cargamos
+        //preguntamos si existe esta orden y que el status sea cerrado.Si es abierto todavia hay operaciones disponibles
+
+        SellOperationNumber sellOperationNumber = doesSellOperationNumberServiceExist(operacion);
+        if (!sellOperationNumber.getStatus()) {
+            throw new RuntimeException();//operacion cerrada
+        }
+        //hasta aca verificamos que el sellOperation no existe o que existe en estado abierto. En otro caso devolvera una exepcion
+
+
+        //busca operationsRecord en estado abiertas y las procesa
+        Optional<OperationRecordEntity> operationRecordEntityOpt = operationRecordRepository.findBySimbolAndStatus(sellOperationNumber.getSimbol(), true);
+        if (operationRecordEntityOpt.isEmpty()) {
+            //no hay ningun activo (operacion de compra) abierto con este simbolo
+            throw new RuntimeException();
+        }
+
+        OperationRecord operationRecord = modelMapper.map(operationRecordEntityOpt.get(), OperationRecord.class);
+
+
+        //este debe encargarse de varias cosas:
+        //_luego de concretar la venta (si es que previamente-en este codigo- se encontro un operationalRecord con este simbolo y con compras a cancelar)
+        //-debe concretar 2 procesos importantes. Primero actualizar el sellOperation. con cuidado en el residualQuantity y el status
+        //si etsa ok, debe actualizar el operationRecord!
+        sellEjecution(operationRecord, sellOperationNumber);
+    }
+
     //
     //
     //este metodo debe actualizarse
     @Transactional
     public void sellEjecution(OperationRecord operationRecord, SellOperationNumber sellOperationNumber){
         Long sellAmount;
+
         //cantidad vendida
         Long quantitysold = operationRecord.getSalesAmount();
 
@@ -131,7 +136,6 @@ public class OperationRecordServiceImpl implements OperationRecordService {
             //este método actualiza el status del sellOperation, la cantidad resiudal es 0L y se cierra, es decir, se vende
             boolean fin = isPurchaseGreaterThanOrEqualToTheSale(sellOperationNumber, operationRecord, purchaseAmount, sellAmount);
 
-
             if (!fin) {
                 if (!isThePurchaseLessThanTheSale(sellAmount, purchaseAmount, sellOperationNumber, operationRecord)) {
                     throw new RuntimeException("la operacion de venta via isPurchaseGreaterThanOrEqualToTheSale no funciono");
@@ -143,7 +147,6 @@ public class OperationRecordServiceImpl implements OperationRecordService {
             //si ya se realizo ventas en el operationRecord hay 2 opciones
             //o es mas alto o es mas bajo que mi cantidad de venta
 
-            //
             long purchaseStoCancel = operationRecord.getPurchaseAmount() - operationRecord.getSalesAmount();
 
             if (sellOperationNumber.getResidualQuantity() == null) {
@@ -156,17 +159,14 @@ public class OperationRecordServiceImpl implements OperationRecordService {
                 }
             }
 
-
             //este método,si es ture; actualiza el status del sellOperation, la cantidad resiudal es 0L y se cierra, es decir, se vende
             boolean fin = isPurchaseGreaterThanOrEqualToTheSale(sellOperationNumber, operationRecord, purchaseStoCancel, sellAmount);
-
 
             if (!fin) {
                 if (!isThePurchaseLessThanTheSale(sellAmount, purchaseStoCancel, sellOperationNumber, operationRecord)) {
                     throw new RuntimeException("la operacion de venta via isPurchaseGreaterThanOrEqualToTheSale no funciono");
                 }
             }
-
         }
     }
 
