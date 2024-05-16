@@ -43,7 +43,7 @@ public class BotMerval_testVisual {
 
 
             //Activos operados por el bot:
-            String totalTickets = "AMZN,GOOGL,TSLA,GLOB,PBR,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,BYMA,NVDA,YPFD,MSFT,PAMP,AGRO,COME,PYPL,DISN,MELI,AAPL,BA.C,LOMA,MCD,GOLD,PG,META,NKE,HAVA,WMT,V,NFLX,VALE,CAT,BABA,BMA,SUPV,GGAL,ARKK";
+            String totalTickets = "AMZN,GOOGL,TSLA,GLOB,AMD,VIST,CEPU,EDN,TGNO4,TGSU2,BYMA,NVDA,YPFD,MSFT,PAMP,QCOM,COME,DISN,MELI,AAPL,BA.C,MCD,GOLD,PG,META,PBR,NKE,WMT,V,NFLX,CAT,BMA,GGAL,SBUX,ARKK,JPM";
             //,VIST,TSLA,DISN,NVDA,MELI,AAPL,AMD,YPFD,MSFT,BA.C,MCD,GOLD," +
             //"PG,META,PBR,NKE,WMT,V,NFLX,BABA,VALE,CAT,GLOB"
 
@@ -56,7 +56,7 @@ public class BotMerval_testVisual {
 
             //a este metodo con botMervalService habria que agregarle la funcionalidad de que revise los activos en cartera y si las condiciones
             // de ventas estan dadas que las ejecute!
-            activosBot = botMervalService.removeOperationalTickets(token,"argentina",activosBot);
+            //activosBot = botMervalService.removeOperationalTickets(token,"argentina",activosBot);
 
             boolean flag = false;
             for (String ticket:activosBot) {
@@ -82,7 +82,7 @@ public class BotMerval_testVisual {
 
 
             //bloque que recorre los activos actuales de la lista
-            for (int i = 0; i < activosBot.size();i++) {
+                for (int i = 0; i < activosBot.size();i++) {
                 System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
                 System.out.println("-------------------------------------------------------");
                 System.out.println("Los resultado de las EMAs (3,9,21,50) del tiket "+activosBot.get(i)+" son: ");

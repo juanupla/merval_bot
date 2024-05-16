@@ -151,9 +151,9 @@ public class BotMervalBusiness {
                     //------------------------
                     //Si las EMAs estan dando venta pero el precio esta por encima de las emas mas cortas, no las vende. => considerando un posible rebote del mercado
                     if(emas.get(1).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0
-                    && emas.get(2).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0){
+                    || emas.get(2).compareTo(BigDecimal.valueOf(cotizacion.getUltimoPrecio()))<0){
                         System.out.println("El tiket: " +activo.getTitulo().getSimbolo()+" se ha procesado adecuadamente. Indica venta pero " +
-                                "el precio esta por encima de las EMAs 9 y 21 -> posible rebote" +"\n"+
+                                "el precio esta por encima de las EMAs 9 o 21 -> posible rebote" +"\n"+
                                 "-------------------------------------------------------");
                         return false;
                     }
@@ -314,8 +314,9 @@ public class BotMervalBusiness {
         BigDecimal ema3 = emas.get(0);
         BigDecimal ema9 = emas.get(1);
         BigDecimal ema21 = emas.get(2);
+        BigDecimal ema50 = emas.get(3);
 
-        if(ema9.compareTo(ema21)<0 || ema3.compareTo(ema21)<0){
+        if(ema9.compareTo(ema21)<0 || ema3.compareTo(ema50)<0){
             return true;
         }
         return false;
@@ -434,6 +435,7 @@ public class BotMervalBusiness {
         LocalDate carnaval1 = LocalDate.of(2024, Month.FEBRUARY, 12);
         LocalDate carnaval2 = LocalDate.of(2024, Month.FEBRUARY, 13);
         LocalDate diaMemoria = LocalDate.of(2024, Month.MARCH, 24);
+        LocalDate feriadoPuente = LocalDate.of(2024, Month.MARCH, 28);
         LocalDate viernesSanto = LocalDate.of(2024, Month.MARCH, 29);
         LocalDate feriadoTuristico1 = LocalDate.of(2024, Month.APRIL, 1);
         LocalDate diaMalvinas = LocalDate.of(2024, Month.APRIL, 2);
@@ -454,6 +456,7 @@ public class BotMervalBusiness {
         localDateTimes.add(carnaval1.atStartOfDay());
         localDateTimes.add(carnaval2.atStartOfDay());
         localDateTimes.add(diaMemoria.atStartOfDay());
+        localDateTimes.add(feriadoPuente.atStartOfDay());
         localDateTimes.add(viernesSanto.atStartOfDay());
         localDateTimes.add(feriadoTuristico1.atStartOfDay());
         localDateTimes.add(diaMalvinas.atStartOfDay());
